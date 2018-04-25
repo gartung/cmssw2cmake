@@ -1,0 +1,6 @@
+<tool name="cmake" version="3.8.2">
+  <client>
+    <environment name="CMAKE_BASE" default="/cvmfs/sft.cern.ch/lcg/releases/CMake/3.8.2-ece19/x86_64-slc6-gcc62-opt"/>
+  </client>
+  <runtime name="PATH" value="$CMAKE_BASE/bin" type="path"/>
+</tool>
