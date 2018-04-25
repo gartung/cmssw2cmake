@@ -4,6 +4,7 @@ This repository contains scripts to convert cms-sw/cmssw build rules (which are 
 - clone this repository: git clone htts://github.com/cms-sw/cmssw2cmake
 - Run the script `cmssw2cmake.sh` and pass it a CMSSW release which is already installed.
 ```
+  git clone htts://github.com/cms-sw/cmssw2cmake
   ./cmssw2cmake/cmssw2cmake.sh CMSSW_10_2_0_pre1
   cd CMSSW_10_2_0_pre1
   cmsenv
