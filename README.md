@@ -4,12 +4,12 @@ This repository contains scripts to convert cms-sw/cmssw build rules (which are 
 - clone this repository
 - Run the script `cmssw2cmake.sh` and pass it a CMSSW release which is already installed.
 ```
-  git clone https://github.com/cms-sw/cmssw2cmake
-  ./cmssw2cmake/cmssw2cmake.sh CMSSW_10_2_0_pre1
-  cd CMSSW_10_2_0_pre1
-  cmsenv
-  mkdir build
-  cd build
-  cmake ../src
-  gmake -k -j $(nproc) VERBOSE=1
+git clone https://github.com/cms-sw/cmssw2cmake
+./cmssw2cmake/cmssw2cmake.sh CMSSW_10_2_0_pre1
+cd CMSSW_10_2_0_pre1
+cmsenv
+mkdir build
+cd build
+cmake ../src
+gmake -k -j $(nproc) VERBOSE=1
 ```
