@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 use File::Basename;
-BEGIN{unshift @INC,"/cvmfs/cms.cern.ch/share/lcg/SCRAMV1/V2_2_7_pre9/src";}
+BEGIN{unshift @INC,"@SCRAM_PREFIX@/src";}
 use Cache::CacheUtilities;
 
 my $base=$ENV{CMSSW_BASE};

@@ -3,7 +3,7 @@ use File::Basename;
 use Cwd 'abs_path';
 my $THIS_SCRIPT=abs_path($0);
 my $SCRIPT_DIR=dirname($THIS_SCRIPT);
-BEGIN{unshift @INC,"/cvmfs/cms.cern.ch/share/lcg/SCRAMV1/V2_2_7_pre9/src";}
+BEGIN{unshift @INC,"@SCRAM_PREFIX@/src";}
 use Cache::CacheUtilities;
 my $relbase=$ENV{CMSSW_RELEASE_BASE};
 my $base=$ENV{CMSSW_BASE} || ".";

@@ -11,6 +11,7 @@ if [ ! -d $REL ] ; then
   scram p $REL  
   cd $REL
   scram setup ${SCRIPT_DIR}/cmake.xml
+  scram setup ${SCRIPT_DIR}/ninja.xml
   ARCH=$(ls -d .SCRAM/slc* | sed 's|.*/||')
   mv .SCRAM/${ARCH}/Environment .SCRAM/${ARCH}/Environment.xx
   scram setup self
