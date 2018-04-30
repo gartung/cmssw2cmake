@@ -54,7 +54,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  set(LIBRARIES_DIRS $d \${LIBRARIES_DIRS})\n";
+        print $r "  set(LIBRARY_DIR $d \${LIBRARY_DIR})\n";
       }
     }
   }
