@@ -25,6 +25,7 @@ function(cms_add_interface name)
   if(LIBS)
     target_link_libraries (${name} INTERFACE ${LIBS})
   endif()
+  install(TARGETS ${name} EXPORT "cmssw" DESTINATION lib)
 endfunction()
 
 function(cms_add_library name)
