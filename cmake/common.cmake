@@ -99,7 +99,7 @@ endmacro()
 
 macro(cms_find_library tool)
   foreach(lib ${ARGN})
-    find_library(${tool}_LIB_${lib} NAMES ${lib} HINTS ${LIBRARIES_DIRS} $ENV{LD_LIBRARY_PATH})
+    find_library(${tool}_LIB_${lib} NAMES ${lib} HINTS ${LIBRARY_DIR} $ENV{LD_LIBRARY_PATH})
     if(${${tool}_LIB_${lib}} STREQUAL "${tool}_LIB_${lib}-NOTFOUND")
       set(LIBS ${lib} ${LIBS})
     else()
