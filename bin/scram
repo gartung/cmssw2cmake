@@ -1,0 +1,108 @@
+#!/usr/bin/env perl
+
+BEGIN
+   {
+   use File::Basename;
+   use Cwd;
+   use $FindBin;
+   my $installdir=${FindBin::Bin};
+   if ($installdir!~/^\//)
+      {
+      $installdir=getcwd()."/${installdir}";
+      }
+   $installdir=dirname($installdir);
+   $ENV{'SCRAM_TOOL_HOME'}="${installdir}/src";
+   $ENV{'SCRAM'}=$0;
+   $ENV{'MANPATH'}="${installdir}/docs/man:$ENV{MANPATH}";
+   unshift @INC,"$installdir", "${installdir}/src";
+   }
+
+use SCRAM::SCRAM;
+use SCRAM::SiteConfig;
+use Getopt::Long ();
+
+#### EDIT THESE: SCRAM Installation Values #################
+$ENV{'SCRAM_VERSION'}='V2_2_8_pre2';
+my $dbPath = '/build/cmssw';
+my $dbPathWrite = '/build/cmssw';
+$main::installPath='/build/cmssw';
+#### Core settings ####
+$main::bold = "";
+$main::normal = "";
+$main::line = "-"x80;
+$main::lookupdb = "";
+$main::error = "";
+$main::good = "";
+$main::prompt="";
+$main::ORIG_ARGV=[];
+$main::ORIG_SCRAM_ARCH = $ENV{SCRAM_ARCH} || "";
+$main::FORCE_SCRAM_ARCH = "";
+$main::interactive=0;
+push @$main::ORIG_ARGV,@ARGV;
+$|=1;
+
+if (!exists $ENV{SCRAM_LOOKUPDB})
+   {
+   if (exists $ENV{SCRAM_USERLOOKUPDB})
+      {
+      $dbPath = $ENV{SCRAM_USERLOOKUPDB};
+      $dbPathWrite = $dbPath;
+      }
+   $ENV{SCRAM_LOOKUPDB} = $dbPath;
+   }
+if (!exists $ENV{SCRAM_LOOKUPDB_WRITE})
+   {
+   if (exists $ENV{SCRAM_USERLOOKUPDB}){$dbPathWrite = $ENV{SCRAM_USERLOOKUPDB};}
+   $ENV{SCRAM_LOOKUPDB_WRITE} = $dbPathWrite;
+   }
+
+# Test whether the output from SCRAM is being redirected, or
+# not (prevents escape signals from being printed to STDOUT if
+# STDOUT is redirected to a file or piped):
+if ( -t STDIN && -t STDOUT && $^O !~ /MSWin32|cygwin/ )
+   {
+   $interactive=1;
+   $bold = "\033[1m";
+   $normal = "\033[0m";
+   $prompt = "\033[0;32;1m";
+   $fail = "\033[0;31;1m"; # Red
+   $pass = "\033[0;33;1m"; # Yellow
+   $good = $bold.$pass;    # Status messages ([OK])
+   $error = $bold.$fail;   #                 ([ERROR])
+   }
+
+# Start a SCRAM session:
+$scram = SCRAM::SCRAM->new();
+
+# Getopt option variables:
+my %opts;
+my %options =
+   ("verbose|v=s"	=> sub { $ENV{SCRAM_VERBOSE} = $ENV{SCRAM_DEBUG} = 1; $scram->classverbosity($_[1]) },
+    "debug|d"		=> sub { $ENV{SCRAM_DEBUG} = 1; $scram->fullverbosity() },
+    "arch|a=s"		=> sub { $ENV{SCRAM_ARCH} = $_[1] ; $main::FORCE_SCRAM_ARCH = $_[1] },
+    "force|f"           => sub { },
+    "help|h"		=> sub { exec("man scram"); }
+    );
+
+# Get the options using Getopt:
+Getopt::Long::config qw(default no_ignore_case require_order bundling);
+
+if (! Getopt::Long::GetOptions(\%opts, %options))
+   {
+   $scram->scramfatal("Error parsing arguments. See \"scram --help\" for usage info.");
+   exit(1);
+   }
+
+# Check for a valid command and execute it or show an error message:
+my $command=shift(@ARGV);
+
+if (!$command)
+   {
+   print $scram->usage();
+   exit(1);
+   }
+elsif($command=~/^(install|remove)$/o){exit(0);}
+$main::SITE = SCRAM::SiteConfig->new();
+$scram->init ();
+
+exit($scram->execcommand($command,@ARGV));
