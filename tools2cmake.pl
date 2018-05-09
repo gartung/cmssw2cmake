@@ -1,8 +1,7 @@
 #!/usr/bin/env perl
-use File::Basename;
-BEGIN{unshift @INC,"/cvmfs/cms.cern.ch/share/lcg/SCRAMV1/V2_2_7_pre9/src";}
+use FindBin;
+use lib "$FindBin::Bin/src";
 use Cache::CacheUtilities;
-
 my $base=$ENV{CMSSW_BASE};
 my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/ToolCache.db.gz";
@@ -34,7 +33,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
     $base=$cc->{SETUP}{$tool}{"${uc}_BASE"};
-    print $r "  set(${uc}_ROOT $base)\n";
+    print $r "  set(${uc}_ROOT \$\{BASE\}$base)\n";
   }
   if ($cc->{SETUP}{$tool}{INCLUDE})
   {

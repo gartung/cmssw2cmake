@@ -1,9 +1,10 @@
 #!/usr/bin/env perl
+use FindBin;
 use File::Basename;
 use Cwd 'abs_path';
 my $THIS_SCRIPT=abs_path($0);
-my $SCRIPT_DIR=dirname($THIS_SCRIPT);
-BEGIN{unshift @INC,"/cvmfs/cms.cern.ch/share/lcg/SCRAMV1/V2_2_7_pre9/src";}
+my $SCRIPT_DIR=${FindBin::Bin};
+use lib "$FindBin::Bin/src";
 use Cache::CacheUtilities;
 my $relbase=$ENV{CMSSW_RELEASE_BASE};
 my $base=$ENV{CMSSW_BASE} || ".";
@@ -95,6 +96,7 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
         if(scalar(@{$c->{$t}{$l}{FILES}})>0){$files=join(" ",@{$c->{$t}{$l}{FILES}});}
         if ($t eq "LIBRARY"){&dump_contents("library",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
         if (($t eq "BIN") && ($files ne "")){&dump_contents("binary",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
+        if (($t eq "BIN") && ($files ne "")){&dump_contents("testbin",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
       }
     }
   }
@@ -144,7 +146,14 @@ sub dump_contents()
   if ($files eq ""){print "######## $dir: No Files\n";return;}
   print "Processing $name\n";
   my $r; my $m;
+  if ($type eq "testbin")
+  {
+  open($r,">${dir}/zz_${name}.cmake");
+  }
+  else
+  {
   open($r,">${dir}/${name}.cmake");
+  }
   if (($type eq "library") && (exists $data{rootdict}))
   {
     foreach my $x (@{$data{rootdict}})
@@ -152,25 +161,48 @@ sub dump_contents()
       print $r "  cms_rootdict(${name} $x->[0] $x->[1])\n";
     }
   }
-  my @deps=();
-  my @flags=();
-  if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
-  if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
-  print $r "cms_add_${type}(${name}\n";
-  print $r "                SOURCES\n";
-  print $r "                  $files\n";
-  if (scalar(@deps))
+  if ($type eq "testbin")
   {
-    print $r "                PUBLIC\n";
-    foreach my $u (@deps)
+    my @args=();
+    if (defined $cont2){push @args,&dump_ctest_args($cont2);}
+    if (scalar(@args)>2)
     {
-      print $r "                  $u\n";
+      shift @args;
+      my $cmd = shift @args;
+      my $wdir = shift @args;
+      while (@args)
+      {   
+          my $c = shift @args;
+          print $r "add_test(NAME ${name}_${c} WORKING_DIRECTORY \$\{CMAKE_CURRENT_BINARY_DIR\} COMMAND \$\{CMAKE_CURRENT_SOURCE_DIR\}/${c})\n";
+      }
+    }
+    else
+    {
+          print $r "add_test(NAME ${name}_CTest COMMAND ${name})\n";
     }
   }
-  print $r "                )\n";
-  if (scalar(@flags)>0)
+  else
   {
-    print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
+    my @deps=();
+    my @flags=();
+    if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
+    if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
+    print $r "cms_add_${type}(${name}\n";
+    print $r "                SOURCES\n";
+    print $r "                  $files\n";
+    if (scalar(@deps))
+    {
+      print $r "                PUBLIC\n";
+      foreach my $u (@deps)
+      {
+        print $r "                  $u\n";
+      }
+    }
+    print $r "                )\n";
+    if (scalar(@flags)>0)
+    {
+     print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
+    }
   }
   close($r);
   &dump_cmake_module($name, \@deps);
@@ -238,4 +270,25 @@ sub dump_comp_flags()
     }
   }
   return @flags;
+}
+
+sub dump_ctest_args()
+{
+  my $c=shift;
+  my @args=();
+  my @fs = ("TEST_RUNNER_ARGS");
+  foreach my $f (@fs)
+  {
+    if(exists $c->{FLAGS}{$f})
+    {
+      foreach my $v (@{$c->{FLAGS}{$f}})
+        {
+          foreach my $f (split(/ /, $v)) 
+            {
+            push @args, "${f}";
+            }
+        }
+    }
+  }
+  return @args
 }
