@@ -77,7 +77,7 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
       open($r,">${base}/${cmdir}/${name}.cmake");
       print $r "  cms_add_interface($name INTERFACE ",join(" ",@deps),")\n";
       close($r);
-      &dump_cmake_module($name, \@deps);
+      &dump_cmake_module($name, $dir, \@deps);
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
@@ -163,8 +163,11 @@ sub dump_contents()
   }
   if ($type eq "testbin")
   {
+    my @deps=();
+    if (defined $cont1){push @deps,&dump_deps($cont1);}
     my @args=();
     if (defined $cont2){push @args,&dump_ctest_args($cont2);}
+    my $tname="";
     if (scalar(@args)>2)
     {
       shift @args;
@@ -173,12 +176,34 @@ sub dump_contents()
       while (@args)
       {   
           my $c = shift @args;
-          print $r "add_test(NAME ${name}_${c} WORKING_DIRECTORY \$\{CMAKE_CURRENT_BINARY_DIR\} COMMAND \$\{CMAKE_CURRENT_SOURCE_DIR\}/${c})\n";
+          print $r "cms_add_test(${name}_${c}\n"; 
+          print $r "             \$\{CMAKE_CURRENT_SOURCE_DIR\}/${c}\n";
+          print $r "                DEPS\n";
+          if (scalar(@deps))
+          {
+            while (@deps)
+            {
+             my $dep=shift @deps;
+             print $r "               ${dep}\n"
+            }
+          }
+          print $r "             )\n";
       }
     }
     else
     {
-          print $r "add_test(NAME ${name}_CTest COMMAND ${name})\n";
+          print $r "cms_add_test(${name}_CTest\n";
+          print $r "             ${name} \n";
+          if (scalar(@deps))
+          {
+            print $r "          DEPS\n";
+            while (@deps)
+            {
+             my $dep=shift @deps;
+             print $r "               ${dep}\n"
+            }
+          }
+          print $r "             )\n";
     }
   }
   else
@@ -205,12 +230,13 @@ sub dump_contents()
     }
   }
   close($r);
-  &dump_cmake_module($name, \@deps);
+  &dump_cmake_module($name, $dir, \@deps);
 }
 
 sub dump_cmake_module()
 {
   my $name=shift;
+  my $dir=shift;
   my $deps=shift;
   my $mkfile=$name;
   if ($proj eq "coral"){$mkfile=~s/^lcg_//;}
@@ -218,6 +244,7 @@ sub dump_cmake_module()
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "set(${mkfile}_FOUND TRUE)\n";
   print $r "mark_as_advanced(${mkfile}_FOUND)\n";
+  print $r "set(LIBRARY_DIRS \${CMAKE_BINARY_DIR}/${dir} \${LIBRARY_DIRS})\n";
   foreach my $d (@$deps)
   {
     if ($proj eq "coral"){$d=~s/^LCG\///;}
