@@ -36,8 +36,9 @@ macro(add_rootdict_rules name)
                     -s ${CMAKE_CURRENT_SOURCE_DIR}/${classes_xml}
                     -o ${classes_cc}
                     --deep
-                    --rootmap=${dict}.rootmap
-                    --rootmap-lib=lib${name}.so
+                    --rootmap=${CMAKE_BINARY_DIR}/lib/${dict}.rootmap
+                    --rootmap-lib=${CMAKE_BINARY_DIR}/lib/lib${name}.so
+                    --library=${CMAKE_BINARY_DIR}/lib/lib${name}.so --multiDict
                     -DCMS_DICT_IMPL -D_REENTRANT -DGNUSOURCE -D__STRICT_ANSI__ ${FLAGS} -DCMSSW_REFLEX_DICT -I${CMAKE_CURRENT_SOURCE_DIR}
                     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${classes_h} ${CMAKE_CURRENT_SOURCE_DIR}/${classes_xml}
                     )

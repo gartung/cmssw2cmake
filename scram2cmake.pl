@@ -156,12 +156,60 @@ sub dump_contents()
   {
   open($r,">${dir}/${name}.cmake");
   }
-  if (($type eq "library") && (exists $data{rootdict}))
-  {
-    foreach my $x (@{$data{rootdict}})
+  if ($type eq "library")
+  { 
+    if (exists $data{rootdict})
     {
-      print $r "  cms_rootdict(${name} $x->[0] $x->[1])\n";
+      foreach my $x (@{$data{rootdict}})
+      {
+        print $r "  cms_rootdict(${name} $x->[0] $x->[1])\n";
+      }
     }
+    my @deps=();
+    my @flags=();
+    if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
+    if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
+    print $r "cms_add_library(${name}\n";
+    print $r "                SOURCES\n";
+    print $r "                  $files\n";
+    if (scalar(@deps))
+    {
+      print $r "                PUBLIC\n";
+      foreach my $u (@deps)
+      {
+        print $r "                  $u\n";
+      }
+    }
+    print $r "                )\n";
+    if (scalar(@flags)>0)
+    {
+     print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
+    }
+  &dump_cmake_module($name, $dir, $type, \@deps);
+  }
+  if ($type eq "binary")
+  {
+    my @deps=();
+    my @flags=();
+    if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
+    if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
+    print $r "cms_add_binary(${name}\n";
+    print $r "                SOURCES\n";
+    print $r "                  $files\n";
+    if (scalar(@deps))
+    {
+      print $r "                PUBLIC\n";
+      foreach my $u (@deps)
+      {
+        print $r "                  $u\n";
+      }
+    }
+    print $r "                )\n";
+    if (scalar(@flags)>0)
+    {
+     print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
+    }
+  &dump_cmake_module($name, $dir, $type, \@deps);
   }
   if ($type eq "testbin")
   {
@@ -206,30 +254,6 @@ sub dump_contents()
           print $r "             )\n";
     }
   }
-  else
-  {
-    my @deps=();
-    my @flags=();
-    if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
-    if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
-    print $r "cms_add_${type}(${name}\n";
-    print $r "                SOURCES\n";
-    print $r "                  $files\n";
-    if (scalar(@deps))
-    {
-      print $r "                PUBLIC\n";
-      foreach my $u (@deps)
-      {
-        print $r "                  $u\n";
-      }
-    }
-    print $r "                )\n";
-    if (scalar(@flags)>0)
-    {
-     print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
-    }
-  &dump_cmake_module($name, $dir, $type, \@deps);
-  }
   close($r);
 }
 
@@ -254,11 +278,6 @@ sub dump_cmake_module()
   {
     print $r "cms_find_package(CORAL)\n";
     print $r "cms_find_library($mkfile $name)\n";
-  }
-  if ($type ne "INTERFACE")
-  {
-    print $r "set(LIBRARY_DIRS \$<TARGET_FILE_DIR:${name}> \${LIBRARY_DIRS})\n";
-    print $r "set(PATH \$<TARGET_FILE_DIR:${name}>  \${PATH})\n";
   }
   close($r);
 }
