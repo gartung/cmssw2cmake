@@ -20,6 +20,7 @@ if ($proj eq "")
 {
   print "Generating tools...\n";
   system("${SCRIPT_DIR}/tools2cmake.pl $tools");
+  system("${SCRIPT_DIR}/runtime2cmake.pl $proj_modules");
   my $coral=`scram tool tag coral CORAL_BASE`; chomp $coral;
   my $ver=$coral; $ver=~s/.*\///;
   print "Generating Coral $ver ....\n";
@@ -74,10 +75,11 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     if (scalar(@deps)>0)
     {
       my $r;
+      my $type="INTERFACE";
       open($r,">${base}/${cmdir}/${name}.cmake");
-      print $r "  cms_add_interface($name INTERFACE ",join(" ",@deps),")\n";
+      print $r "  cms_add_interface($name $type ",join(" ",@deps),")\n";
       close($r);
-      &dump_cmake_module($name, $dir, \@deps);
+      &dump_cmake_module($name, $dir, $type, \@deps);
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
@@ -181,9 +183,8 @@ sub dump_contents()
           print $r "                DEPS\n";
           if (scalar(@deps))
           {
-            while (@deps)
+            foreach my $dep (@deps)
             {
-             my $dep=shift @deps;
              print $r "               ${dep}\n"
             }
           }
@@ -197,9 +198,8 @@ sub dump_contents()
           if (scalar(@deps))
           {
             print $r "          DEPS\n";
-            while (@deps)
+            foreach my $dep (@deps)
             {
-             my $dep=shift @deps;
              print $r "               ${dep}\n"
             }
           }
@@ -228,15 +228,16 @@ sub dump_contents()
     {
      print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
     }
+  &dump_cmake_module($name, $dir, $type, \@deps);
   }
   close($r);
-  &dump_cmake_module($name, $dir, \@deps);
 }
 
 sub dump_cmake_module()
 {
   my $name=shift;
   my $dir=shift;
+  my $type=shift;
   my $deps=shift;
   my $mkfile=$name;
   if ($proj eq "coral"){$mkfile=~s/^lcg_//;}
@@ -244,7 +245,6 @@ sub dump_cmake_module()
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "set(${mkfile}_FOUND TRUE)\n";
   print $r "mark_as_advanced(${mkfile}_FOUND)\n";
-  print $r "set(LIBRARY_DIRS \${CMAKE_BINARY_DIR}/${dir} \${LIBRARY_DIRS})\n";
   foreach my $d (@$deps)
   {
     if ($proj eq "coral"){$d=~s/^LCG\///;}
@@ -254,6 +254,11 @@ sub dump_cmake_module()
   {
     print $r "cms_find_package(CORAL)\n";
     print $r "cms_find_library($mkfile $name)\n";
+  }
+  if ($type ne "INTERFACE")
+  {
+    print $r "set(LIBRARY_DIRS \$<TARGET_FILE_DIR:${name}> \${LIBRARY_DIRS})\n";
+    print $r "set(PATH \$<TARGET_FILE_DIR:${name}>  \${PATH})\n";
   }
   close($r);
 }
