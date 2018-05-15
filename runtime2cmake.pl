@@ -20,14 +20,14 @@ foreach my $pvar (keys %{$cc->{path}})
   {
     if ($v){ if ($value eq "") {$value=$v;} else {$value=$value.":".$v;} }
   }
-  print $r "set(RUNTIME \"$pvar=$value\" \${RUNTIME})\n";
+  print $r "set(ENV{$pvar}=\"$value\")\n";
 }
 
 foreach my $h (@{$cc->{variables}})
 {
   while (my ($var,$val) = each %$h)
   {
-    print $r "set(RUNTIME \"$var=$val->[0]\" \${RUNTIME})\n";
+    print $r "set(ENV{$var}=\"$val->[0]\")\n";
   }
 }
 

@@ -194,7 +194,7 @@ sub dump_contents()
     else
     {
           print $r "cms_add_test(${name}_CTest\n";
-          print $r "             ${name} \n";
+          print $r "             \$\{CMAKE_BINARY_DIR}/bin/${name} \n";
           if (scalar(@deps))
           {
             print $r "          DEPS\n";
