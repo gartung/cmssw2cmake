@@ -242,7 +242,7 @@ sub dump_contents()
     else
     {
           print $r "cms_add_test(${name}_CTest\n";
-          print $r "             ${name} \n";
+          print $r "             \$\{CMAKE_BINARY_DIR}/bin/${name} \n";
           if (scalar(@deps))
           {
             print $r "          DEPS\n";
@@ -278,6 +278,11 @@ sub dump_cmake_module()
   {
     print $r "cms_find_package(CORAL)\n";
     print $r "cms_find_library($mkfile $name)\n";
+  }
+  if ($type ne "INTERFACE")
+  {
+    print $r "set(LIBRARY_DIRS \$<TARGET_FILE_DIR:${name}> \${LIBRARY_DIRS})\n";
+    print $r "set(PATH \$<TARGET_FILE_DIR:${name}>  \${PATH})\n";
   }
   close($r);
 }

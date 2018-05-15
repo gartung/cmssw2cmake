@@ -20,14 +20,14 @@ foreach my $pvar (keys %{$cc->{path}})
   {
     if ($v){ if ($value eq "") {$value=$v;} else {$value=$value.":".$v;} }
   }
-  print $r "set($pvar=$value)\n";
+  print $r "set(ENV{$pvar}=\"$value\")\n";
 }
 
 foreach my $h (@{$cc->{variables}})
 {
   while (my ($var,$val) = each %$h)
   {
-    print $r "set($var=$val->[0])\n";
+    print $r "set(ENV{$var}=\"$val->[0]\")\n";
   }
 }
 
