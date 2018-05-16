@@ -64,7 +64,7 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     }
     my $ss="*.cc *.cxx *.f *.f77";
     if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{ADD_SUBDIR})){$ss="*.cc *.cxx *.f *.f77 */*.cc */*.cxx */*.f */*.f77"}
-    &dump_contents("library",$cmdir, $name, $ss,$c);
+    &dump_contents($class,"library",$cmdir, $name, $ss,$c);
   }
   elsif(($class eq "PACKAGE") && (exists $cc->{BUILDTREE}{$dir}{RAWDATA}{content}))
   {
@@ -96,9 +96,9 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
         my $files="*.cc";
         if (! exists $c->{$t}{$l}{FILES}){$files="";}
         if(scalar(@{$c->{$t}{$l}{FILES}})>0){$files=join(" ",@{$c->{$t}{$l}{FILES}});}
-        if ($t eq "LIBRARY"){&dump_contents("library",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
-        if (($t eq "BIN") && ($files ne "")){&dump_contents("binary",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
-        if (($t eq "BIN") && ($files ne "")){&dump_contents("testbin",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
+        if ($t eq "LIBRARY"){&dump_contents($class,"library",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
+        if (($t eq "BIN") && ($files ne "")){&dump_contents($class,"binary",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
+        if (($class eq "TEST") && ($t eq "BIN") && ($files ne "")){&dump_contents($class,"testbin",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
       }
     }
   }
@@ -138,6 +138,7 @@ foreach my $d (glob("${base}/src/*"))
 
 sub dump_contents()
 {
+  my $class=shift;
   my $type=shift;
   my $dir=shift;
   my $name=shift;
@@ -170,6 +171,7 @@ sub dump_contents()
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
     print $r "cms_add_library(${name}\n";
+    print $r "                TYPE ${class}\n";
     print $r "                SOURCES\n";
     print $r "                  $files\n";
     if (scalar(@deps))
@@ -194,6 +196,7 @@ sub dump_contents()
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
     print $r "cms_add_binary(${name}\n";
+    print $r "                TYPE ${class}\n";
     print $r "                SOURCES\n";
     print $r "                  $files\n";
     if (scalar(@deps))
@@ -242,7 +245,7 @@ sub dump_contents()
     else
     {
           print $r "cms_add_test(${name}_CTest\n";
-          print $r "             \$\{CMAKE_BINARY_DIR}/bin/${name} \n";
+          print $r "             ${name} \n";
           if (scalar(@deps))
           {
             print $r "          DEPS\n";
