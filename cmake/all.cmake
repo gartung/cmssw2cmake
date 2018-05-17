@@ -6,4 +6,4 @@ include (${CMAKE_CURRENT_LIST_DIR}/common.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/root_dict.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/utils.cmake)
 include (${CMAKE_CURRENT_LIST_DIR}/condformat_serialization.cmake)
-
+include (${CMAKE_CURRENT_LIST_DIR}/edmplugincmds.cmake)
