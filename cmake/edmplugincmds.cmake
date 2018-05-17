@@ -7,7 +7,6 @@ macro(edmpluginrefresh name)
 endmacro()
 
 macro(edmplugingen name)
-  message("edmplugingen ${name}")
   add_custom_command(TARGET ${name} POST_BUILD
                      COMMAND echo "module plugin${name}" >${CMAKE_BINARY_DIR}/lib/plugin${name}.edmplugin
                     )
