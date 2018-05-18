@@ -76,10 +76,12 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     {
       my $r;
       my $type="INTERFACE";
-      open($r,">${base}/${cmdir}/${name}.cmake");
-      print $r "  cms_add_interface($name $type ",join(" ",@deps),")\n";
+      open($r,">${base}/${cmdir}/interface/${name}.cmake");
+      print $r "  cms_add_interface($name TYPE $type DEPS ",join(" ",@deps),")\n";
       close($r);
       &dump_cmake_module($name, $dir, $type, \@deps);
+      system("rm -f ${base}/${cmdir}/interface/CMakeLists.txt");
+      system("cat ${base}/${cmdir}/interface/${name}.cmake >> ${base}/${cmdir}/interface/CMakeLists.txt"); 
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
