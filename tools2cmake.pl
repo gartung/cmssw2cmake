@@ -59,8 +59,10 @@ foreach my $tool (keys %{$cc->{SETUP}})
   }
   if ($cc->{SETUP}{$tool}{LIB})
   {
-    my $libs = join(" ",reverse @{$cc->{SETUP}{$tool}{LIB}});
-    if ($libs ne ""){print $r "  cms_find_library(${uc} ${libs})\n";}
+    foreach my $lib (@{$cc->{SETUP}{$tool}{LIB}})
+    {
+    if ($lib ne ""){print $r "  cms_find_library(${uc} ${lib})\n";}
+    }
   }
   if ($cc->{SETUP}{$tool}{FLAGS})
   {

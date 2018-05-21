@@ -220,43 +220,45 @@ sub dump_contents()
   {
     my @deps=();
     if (defined $cont1){push @deps,&dump_deps($cont1);}
-    my @args=();
-    if (defined $cont2){push @args,&dump_ctest_args($cont2);}
-    my $tname="";
-    if (scalar(@args)>2)
+    my @trargs=();
+    my @pretest=();
+    if (defined $cont2)
     {
-      shift @args;
-      my $cmd = shift @args;
-      my $wdir = shift @args;
-      while (@args)
-      {   
-          my $c = shift @args;
-          print $r "cms_add_test(${name}_${c}\n"; 
-          print $r "             \$\{CMAKE_CURRENT_SOURCE_DIR\}/${c}\n";
-          print $r "                DEPS\n";
-          if (scalar(@deps))
-          {
-            foreach my $dep (@deps)
+        if(exists $cont2->{FLAGS}{TEST_RUNNER_ARGS}) 
             {
-             print $r "               ${dep}\n"
+              push @trargs, $cont2->{FLAGS}{TEST_RUNNER_ARGS};
             }
-          }
-          print $r "             )\n";
+        if(exists $cont2->{FLAGS}{PRE_TEST}) 
+            {
+              push @pretest, $cont2->{FLAGS}{PRE_TEST};
+            }
+    
+    }
+    print $r "cms_add_test(${name}_CTest\n"; 
+    print $r "             COMMAND ${name} \n";
+    if (scalar(@deps))
+    {
+      print $r "          DEPS\n";
+      foreach my $dep (@deps)
+      {
+       print $r "               ${dep}\n"
       }
     }
-    else
+    if (scalar(@trargs)>0)
     {
-          print $r "cms_add_test(${name}_CTest\n";
-          print $r "             ${name} \n";
-          if (scalar(@deps))
-          {
-            print $r "          DEPS\n";
-            foreach my $dep (@deps)
-            {
-             print $r "               ${dep}\n"
-            }
-          }
-          print $r "             )\n";
+        print $r "          TRARGS\n";
+        foreach my $a (@trargs)
+        {
+        if ($a) {print $r "          $a->[0]\n";}
+        }
+    } 
+        print $r "             )\n";
+    if (scalar(@pretest)>0)
+    {
+        foreach my $p (@pretest)
+        {
+        if ($p) {print $r "set_tests_properties( ${name}_CTest PROPERTIES DEPENDS $p->[0]_CTest)\n";}
+        }
     }
   }
   close($r);
@@ -333,23 +335,4 @@ sub dump_comp_flags()
   return @flags;
 }
 
-sub dump_ctest_args()
-{
-  my $c=shift;
-  my @args=();
-  my @fs = ("TEST_RUNNER_ARGS");
-  foreach my $f (@fs)
-  {
-    if(exists $c->{FLAGS}{$f})
-    {
-      foreach my $v (@{$c->{FLAGS}{$f}})
-        {
-          foreach my $f (split(/ /, $v)) 
-            {
-            push @args, "${f}";
-            }
-        }
-    }
-  }
-  return @args
-}
+
