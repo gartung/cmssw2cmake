@@ -21,6 +21,9 @@ if ($proj eq "")
   print "Generating tools...\n";
   system("${SCRIPT_DIR}/tools2cmake.pl $tools");
   system("${SCRIPT_DIR}/runtime2cmake.pl $proj_modules");
+}
+if ( -e "${base}/config/toolbox/${arch}/tools/selected/coral.xml")
+{
   my $coral=`scram tool tag coral CORAL_BASE`; chomp $coral;
   my $ver=$coral; $ver=~s/.*\///;
   print "Generating Coral $ver ....\n";
@@ -271,7 +274,9 @@ sub dump_cmake_module()
   my $type=shift;
   my $deps=shift;
   my $mkfile=$name;
-  if ($proj eq "coral"){$mkfile=~s/^lcg_//;}
+
+  if ($proj eq "coral")
+  {$mkfile=~s/^lcg_//;}
   my $r;
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "set(${mkfile}_FOUND TRUE)\n";
@@ -284,12 +289,7 @@ sub dump_cmake_module()
   if($proj eq "coral")
   {
     print $r "cms_find_package(CORAL)\n";
-    print $r "cms_find_library($mkfile $name)\n";
-  }
-  if ($type ne "INTERFACE")
-  {
-    print $r "set(LIBRARY_DIRS \$<TARGET_FILE_DIR:${name}> \${LIBRARY_DIRS})\n";
-    print $r "set(PATH \$<TARGET_FILE_DIR:${name}>  \${PATH})\n";
+    print $r "list(APPEND LIBS $name)\n";
   }
   close($r);
 }

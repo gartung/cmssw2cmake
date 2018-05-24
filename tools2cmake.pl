@@ -33,7 +33,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
     $base=$cc->{SETUP}{$tool}{"${uc}_BASE"};
-    print $r "  set(${uc}_ROOT \$\{BASE\}$base)\n";
+    print $r "  set(${uc}_ROOT $base)\n";
   }
   if ($cc->{SETUP}{$tool}{INCLUDE})
   {
@@ -42,7 +42,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  set(INCLUDE_DIRS $d \${INCLUDE_DIRS})\n";
+        print $r "  list(APPEND INCLUDE_DIRS $d)\n";
       }
     }
   }
@@ -53,7 +53,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  set(LIBRARY_DIRS $d \${LIBRARY_DIRS})\n";
+        print $r "  list(APPEND LIBRARY_DIRS $d)\n";
       }
     }
   }
@@ -61,7 +61,10 @@ foreach my $tool (keys %{$cc->{SETUP}})
   {
     foreach my $lib (@{$cc->{SETUP}{$tool}{LIB}})
     {
-    if ($lib ne ""){print $r "  cms_find_library(${uc} ${lib})\n";}
+      if ($lib ne "")
+      {
+        print $r "  list(APPEND LIBS ${lib})\n";
+      }
     }
   }
   if ($cc->{SETUP}{$tool}{FLAGS})
