@@ -2,11 +2,11 @@
 use FindBin;
 use lib "$FindBin::Bin/src";
 use Cache::CacheUtilities;
-my $base=$ENV{CMSSW_BASE};
+my $base=$ENV{CMSSW_BASE} || ".";
 my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/RuntimeCache.db.gz";
 my $proj_cmake="${base}/cmssw-cmake";
-my $proj_modules=shift || "${proj_cmake}/cmssw";
+my $proj_modules="${proj_cmake}/cmssw";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
 
