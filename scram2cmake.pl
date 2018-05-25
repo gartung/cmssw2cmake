@@ -81,7 +81,7 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
       my $r;
       my $type="INTERFACE";
       system("mkdir -p ${base}/${cmdir}/interface");
-      open($r,">${base}/${cmdir}/interface/${name}.cmake");
+      open($r,">${base}/${cmdir}/interface/${name}Target.cmake");
       print $r "\t\tcms_add_interface($name TYPE $type\n";
       print $r "\t\t\tDEPS\n";
       foreach my $d (@deps)
@@ -89,13 +89,13 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
         my $u = $d;
         $u =~ s/\///;
         $u =~ s/^\s+|\s+$//g;
-        print $r "\t\t\t\t$u\n";
+        print $r "\t\t\t\t${u}Target\n";
       }
       print $r "\t\t)\n";
       close($r);
       &dump_cmake_module($name, $dir, $type, \@deps);
       if (-e "${base}/${cmdir}/interface/CMakeLists.txt") {system("rm -f ${base}/${cmdir}/interface/CMakeLists.txt");}
-      system("cat ${base}/${cmdir}/interface/${name}.cmake > ${base}/${cmdir}/interface/CMakeLists.txt"); 
+      system("cat ${base}/${cmdir}/interface/${name}Target.cmake > ${base}/${cmdir}/interface/CMakeLists.txt"); 
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
@@ -199,7 +199,7 @@ sub dump_contents()
         my $u = $d;
         $u =~ s/\///;
         $u =~ s/^\s+|\s+$//g;
-        print $r "\t\t\t\t$u\n";
+        print $r "\t\t\t\t${u}Target\n";
       }
     }
     print $r "\t\t\t)\n";
@@ -228,7 +228,7 @@ sub dump_contents()
         $u =~ s/CLHEP/clhep/;
         $u =~ s/\///;
         $u =~ s/^\s+|\s+$//g;
-        print $r "\t\t\t\t$u\n";
+        print $r "\t\t\t\t${u}Target\n";
       }
     }
     print $r "\t\t\t)\n";
@@ -287,25 +287,49 @@ sub dump_cmake_module()
 
   if ($proj eq "coral")
   {$mkfile=~s/^lcg_//;}
-
+  $mkfile .= "Target";
   my $r;
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "if(NOT ${mkfile}_FOUND)\n";
   print $r "  set(${mkfile}_FOUND TRUE)\n";
   print $r "  mark_as_advanced(${mkfile}_FOUND)\n";
+  print $r "  add_library(${mkfile} INTERFACE)\n";
+  print $r "  target_link_libraries(${mkfile} INTERFACE $name)\n";
   foreach my $d (@$deps)
   {
       $d =~ s/\///;
       $d =~ s/^\s+|\s+$//g;
       $d=~s/^LCG//;
       $d=~s/-/_/g;
-      print $r "cms_find_package($d)\n";
+      print $r "  cms_find_package($d)\n";
+      print $r "  list(APPEND USES $d)\n";
   }
   if($proj eq "coral")
   {
-    print $r "cms_find_package(coral)\n";
+    print $r "  target_link_libraries(${mkfile} INTERFACE coral)\n";
   }
-  print $r "list(APPEND LIBS $name)\n";
+  print $r "  if(USES)\n";
+  print $r "  list(REMOVE_DUPLICATES USES)\n";
+  print $r "  foreach(dep \${USES})\n";
+  print $r "    target_link_libraries(${mkfile} INTERFACE \${dep})\n";
+  print $r "  endforeach()\n";
+  print $r "  endif()\n";
+  print $r "  target_compile_definitions(${mkfile} INTERFACE \${PROJECT_CPPDEFINES})\n";
+  print $r "  target_compile_options(${mkfile} INTERFACE \${PROJECT_CXXFLAGS})\n";
+  print $r "  if(INCLUDE_DIRS)\n";
+  print $r "    list(REMOVE_DUPLICATES INCLUDE_DIRS)\n";
+  print $r "    target_include_directories(${mkfile} INTERFACE \${INCLUDE_DIRS})\n";
+  print $r "  endif()\n";
+  print $r "  if (LIBRARY_DIRS)\n";
+  print $r "    list(REMOVE_DUPLICATES LIBRARY_DIRS)\n";
+  print $r "    foreach (libdir \${LIBRARY_DIRS})\n";
+  print $r "      target_link_libraries (${mkfile} INTERFACE \"-L\${libdir}\")\n";
+  print $r "    endforeach()\n";
+  print $r "  endif()\n";
+  print $r "  if(LIBS)\n";
+  print $r "    list(REMOVE_DUPLICATES LIBS)\n";
+  print $r "    target_link_libraries (${mkfile} INTERFACE \${LIBS})\n";
+  print $r "  endif()\n";
   print $r "endif()\n";
   close($r);
 }
