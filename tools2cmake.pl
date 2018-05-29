@@ -7,7 +7,7 @@ my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/ToolCache.db.gz";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
-my $tools = shift || "${base}/cmssw-cmake/modules";
+my $tools = shift || "${base}/cmssw-cmake/tools";
 system("mkdir -p $tools");
 my %data=();
 foreach my $tool (keys %{$cc->{SETUP}})
@@ -19,25 +19,19 @@ foreach my $tool (keys %{$cc->{SETUP}})
   
   my $r;
   open($r,">${tools}/Find${tus}.cmake");
-  print $r "if(NOT ${uc}_FOUND)\n";
-  print $r "  mark_as_advanced(${uc}_FOUND)\n";
-  print $r "  set(${uc}_FOUND TRUE)\n";
-  if (exists $cc->{SETUP}{$tool}{USE})
-  {
-    foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
-    {
-      if (exists $cc->{SETUP}{$d})
-      {
-         $d=~s/-/_/g;
-         print $r "  cms_find_package($d)\n";
-      }
-    }
-  }
+  my @vars = ("_INCLUDE_DIRS", "_LIBRARY_DIRS", "_LIBS", "_CPPDEFINES", "_CXXFLAGS", "_CFLAGS", "_FFLAGS");
+  print $r "  mark_as_advanced(${tus}_FOUND ${uc}_ROOT ";
+  foreach my $v (@vars)
+  { 
+    print $r "${tool}${v} ";
+  } 
+  print $r ")\n";
+  print $r "  set(${tus}_FOUND TRUE)\n";
   my $base="";
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
     $base=$cc->{SETUP}{$tool}{"${uc}_BASE"};
-    print $r "  set(${uc}_ROOT $base)\n";
+    print $r "  set(${uc}_ROOT \"$base\")\n";
   }
   if ($cc->{SETUP}{$tool}{INCLUDE})
   {
@@ -46,7 +40,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  list(APPEND INCLUDE_DIRS $d)\n";
+        print $r "  list(APPEND ${tool}_INCLUDE_DIRS \"$d\")\n";
       }
     }
   }
@@ -57,7 +51,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  list(APPEND LIBRARY_DIRS $d)\n";
+        print $r "  list(APPEND ${tool}_LIBRARY_DIRS \"$d\")\n";
       }
     }
   }
@@ -67,7 +61,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if ($lib ne "")
       {
-        print $r "  list(APPEND LIBS ${lib})\n";
+        print $r "  list(APPEND ${tool}_LIBS ${lib})\n";
       }
     }
   }
@@ -78,24 +72,24 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if($f eq "CPPDEFINES")
       {
         foreach my $def (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \${PROJECT_${f}} -D${def})\n";}
+        {print $r "  list(APPEND ${tool}_PROJECT_${f} -D${def})\n";}
       }
       elsif(($f eq "CPPFLAGS") || ($f eq "CXXFLAGS"))
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \${PROJECT_${f}} ${opt})\n";}
+        {print $r "  list(APPEND ${tool}_PROJECT_${f} ${opt})\n";}
       }
       elsif($f eq "CFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \"\${PROJECT_${f}} ${opt}\")\n";}
-        print $r "  set(CMAKE_C_FLAGS \"\${CMAKE_C_FLAGS} \${PROJECT_${f}}\")\n";
+        {print $r "  list(APPEND ${tool}_PROJECT_${f} \"${opt}\")\n";}
+        print $r "  list(APPEND ${tool}_CMAKE_C_FLAGS \"${tool}_\${PROJECT_${f}}\")\n";
       }
       elsif($f eq "FFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \"\${PROJECT_${f}} ${opt}\")\n";}
-        print $r "  set(CMAKE_F_FLAGS \"\${CMAKE_F_FLAGS} \${PROJECT_${f}}\")\n";
+        {print $r "  list(APPEND ${tool}_PROJECT_${f} \"${opt}\")\n";}
+        print $r "  list(APPEND ${tool}_CMAKE_F_FLAGS \"${tool}_\${PROJECT_${f}}\")\n";
       }
       else
       {
@@ -103,13 +97,37 @@ foreach my $tool (keys %{$cc->{SETUP}})
         {
           if ($f eq "REM_CXXFLAGS")
           {
-            print $r "  string(REPLACE \"$v\" \"\" PROJECT_CXXFLAGS \"\${PROJECT_CXXFLAGS}\")\n";
+            print $r "  list(REMOVE_ITEM ${tool}_PROJECT_CXXFLAGS  \"$v\")\n";
           }
         }
       }
     }
   }
-  print $r "endif()\n";
+  if (exists $cc->{SETUP}{$tool}{USE})
+  {
+    foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
+    {
+      if (exists $cc->{SETUP}{$d})
+      {
+         $d=~s/-/_/g;
+         print $r "  if(NOT ${d}_FOUND)\n";
+         print $r "    cms_find_package(${d})\n";
+         print $r "  endif()\n";
+         foreach my $v (@vars)
+         {
+           print $r "  if(${d}${v})\n";
+           print $r "    list(APPEND ${tool}${v} \${${d}${v}})\n";
+           print $r "  endif()\n";
+         }
+     }
+    }
+    foreach my $v (@vars)
+    {
+      print $r "  if(${tool}${v})\n";
+      print $r "  list(REMOVE_DUPLICATES ${tool}${v})\n";
+      print $r "  endif()\n";
+    }
+  }
   close($r);
 }
 
