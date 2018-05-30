@@ -15,7 +15,8 @@ my $proj_modules=shift || "${proj_cmake}/cmssw";
 my $tools="${proj_cmake}/tools";
 my $prods="${base}/.SCRAM/${arch}/ProjectCache.db.gz";
 chdir($base);
-system("rm -rf $proj_modules $tools; mkdir -p $proj_modules");
+system("rm -rf $proj_modules");
+system("mkdir -p $proj_modules");
 if ($proj eq "")
 {
   print "Generating tools...\n";
@@ -79,12 +80,22 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     {
       my $r;
       my $type="INTERFACE";
+      system("mkdir -p ${base}/${cmdir}/interface");
       open($r,">${base}/${cmdir}/interface/${name}.cmake");
-      print $r "  cms_add_interface($name TYPE $type DEPS ",join(" ",@deps),")\n";
+      print $r "\t\tcms_add_interface($name TYPE $type\n";
+      print $r "\t\t\tDEPS\n";
+      foreach my $d (@deps)
+      {
+        my $u = $d;
+        $u =~ s/\///;
+        $u =~ s/^\s+|\s+$//g;
+        print $r "\t\t\t\t$u\n";
+      }
+      print $r "\t\t)\n";
       close($r);
       &dump_cmake_module($name, $dir, $type, \@deps);
-      system("rm -f ${base}/${cmdir}/interface/CMakeLists.txt");
-      system("cat ${base}/${cmdir}/interface/${name}.cmake >> ${base}/${cmdir}/interface/CMakeLists.txt"); 
+      if (-e "${base}/${cmdir}/interface/CMakeLists.txt") {system("rm -f ${base}/${cmdir}/interface/CMakeLists.txt");}
+      system("cat ${base}/${cmdir}/interface/${name}.cmake > ${base}/${cmdir}/interface/CMakeLists.txt"); 
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
@@ -141,6 +152,7 @@ foreach my $d (glob("${base}/src/*"))
   }
 }
 
+
 sub dump_contents()
 {
   my $class=shift;
@@ -175,24 +187,27 @@ sub dump_contents()
     my @flags=();
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
-    print $r "cms_add_library(${name}\n";
-    print $r "                TYPE ${class}\n";
-    print $r "                SOURCES\n";
-    print $r "                  $files\n";
+    print $r "cms_add_library(${name} ";
+    print $r "TYPE ${class}\n";
+    print $r "\t\t\tSOURCES\n";
+    print $r "\t\t\t\t$files\n";
     if (scalar(@deps))
     {
-      print $r "                PUBLIC\n";
-      foreach my $u (@deps)
-      {
-        print $r "                  $u\n";
+      print $r "\t\t\tPUBLIC\n";
+      foreach my $d (@deps)
+      { 
+        my $u = $d;
+        $u =~ s/\///;
+        $u =~ s/^\s+|\s+$//g;
+        print $r "\t\t\t\t$u\n";
       }
     }
-    print $r "                )\n";
+    print $r "\t\t\t)\n";
     if (scalar(@flags)>0)
     {
      print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
     }
-  &dump_cmake_module($name, $dir, $type, \@deps);
+    if($class ne "TEST") {&dump_cmake_module($name, $dir, $type, \@deps)};
   }
   if ($type eq "binary")
   {
@@ -200,24 +215,27 @@ sub dump_contents()
     my @flags=();
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
-    print $r "cms_add_binary(${name}\n";
-    print $r "                TYPE ${class}\n";
-    print $r "                SOURCES\n";
-    print $r "                  $files\n";
+    print $r "cms_add_binary(${name} ";
+    print $r "TYPE ${class}\n";
+    print $r "\t\t\tSOURCES\n";
+    print $r "\t\t\t\t$files\n";
     if (scalar(@deps))
     {
-      print $r "                PUBLIC\n";
-      foreach my $u (@deps)
+      print $r "\t\t\tPUBLIC\n";
+      foreach my $d (@deps)
       {
-        print $r "                  $u\n";
+        my $u = $d;
+        $u =~ s/CLHEP/clhep/;
+        $u =~ s/\///;
+        $u =~ s/^\s+|\s+$//g;
+        print $r "\t\t\t\t$u\n";
       }
     }
-    print $r "                )\n";
+    print $r "\t\t\t)\n";
     if (scalar(@flags)>0)
     {
      print $r "target_compile_options($name PRIVATE ",join(" ",@flags),")\n";
     }
-  &dump_cmake_module($name, $dir, $type, \@deps);
   }
   if ($type eq "testbin")
   {
@@ -237,25 +255,17 @@ sub dump_contents()
             }
     
     }
-    print $r "cms_add_test(${name}_CTest\n"; 
-    print $r "             COMMAND ${name} \n";
-    if (scalar(@deps))
-    {
-      print $r "          DEPS\n";
-      foreach my $dep (@deps)
-      {
-       print $r "               ${dep}\n"
-      }
-    }
+    print $r "cms_add_test(${name}_CTest "; 
+    print $r "COMMAND ${name} \n";
     if (scalar(@trargs)>0)
     {
-        print $r "          TRARGS\n";
+        print $r "\t\t\tTRARGS\n";
         foreach my $a (@trargs)
         {
-        if ($a) {print $r "          $a->[0]\n";}
+        if ($a) {print $r "\t\t\t\t$a->[0]\n";}
         }
     } 
-        print $r "             )\n";
+        print $r "\t\t\t)\n";
     if (scalar(@pretest)>0)
     {
         foreach my $p (@pretest)
@@ -277,20 +287,48 @@ sub dump_cmake_module()
 
   if ($proj eq "coral")
   {$mkfile=~s/^lcg_//;}
+
   my $r;
+  my @vars = ("_INCLUDE_DIRS", "_LIBRARY_DIRS", "_LIBS", "_CPPDEFINES", "_CXXFLAGS", "_CFLAGS", "_FFLAGS");
   open($r,">${proj_modules}/Find${mkfile}.cmake");
-  print $r "set(${mkfile}_FOUND TRUE)\n";
-  print $r "mark_as_advanced(${mkfile}_FOUND)\n";
+  print $r "  set(${mkfile}_FOUND TRUE)\n";
+  print $r "  mark_as_advanced(${mkfile}_FOUND)\n";
   foreach my $d (@$deps)
   {
-    if ($proj eq "coral"){$d=~s/^LCG\///;}
-    print $r "cms_find_package($d)\n";
+      $d =~ s/\///;
+      $d =~ s/^\s+|\s+$//g;
+      $d=~s/^LCG//;
+      $d=~s/-/_/g;
+  print $r "  if(NOT ${d}_FOUND)\n"; 
+  print $r "    cms_find_package(${d})\n";
+  print $r "  endif()\n";
+  foreach my $v (@vars)
+    {
+           print $r "  if(${d}${v})\n";
+           print $r "    list(APPEND ${mkfile}${v} \${${d}${v}})\n";
+           print $r "  endif()\n";
+    }
   }
   if($proj eq "coral")
   {
-    print $r "cms_find_package(CORAL)\n";
-    print $r "list(APPEND LIBS $name)\n";
+  my $d = "CORAL";
+  print $r "  list(APPEND ${mkfile}_LIBS ${name})\n";
+  print $r "  if(NOT ${d}_FOUND)\n"; 
+  print $r "    cms_find_package(${d})\n";
+  print $r "  endif()\n";
+  foreach my $v (@vars)
+    {
+           print $r "  if(${d}${v})\n";
+           print $r "    list(APPEND ${mkfile}${v} \${${d}${v}})\n";
+           print $r "  endif()\n";
+    }
   }
+  foreach my $v (@vars)
+    {
+    print $r "  if(${mkfile}${v})\n";
+    print $r "  list(REMOVE_DUPLICATES ${mkfile}${v})\n";
+    print $r "  endif()\n";
+    }
   close($r);
 }
 
@@ -303,7 +341,7 @@ sub dump_deps()
     if(! defined $x){next;}
     if($x eq "f77compiler"){$x="gcc-f77compiler";}
     my $u=$x;
-    my $uc=uc($x); $uc=~s/-/_/g;
+    my$uc=uc($x);$uc=~s/-/_/g;
     if (-e "${tools}/Find${uc}.cmake"){push @deps,$uc;}
     else{unshift @deps,$x;}
   }
