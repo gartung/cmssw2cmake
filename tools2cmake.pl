@@ -14,6 +14,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
 {
   my $tus = $tool;
   $tus=~s/-/_/g;
+  $tus .= "Target";
   my $uc=uc($tool);
   $uc=~s/-/_/g;
   
@@ -31,7 +32,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
          #$d=uc($d);
          $d=~s/-/_/g;
          print $r "  cms_find_package($d)\n";
-         #print $r "  list(APPEND USES $d)\n";
+         print $r "  list(APPEND USES $d)\n";
       }
     }
   }
@@ -111,17 +112,17 @@ foreach my $tool (keys %{$cc->{SETUP}})
       }
     }
   }
-#  print $r "  add_library(${tus} INTERFACE)\n";
-#  print $r "  target_include_directories(${tus} INTERFACE \${INCLUDE_DIRS})\n";
-#  print $r "  target_link_libraries(${tus} INTERFACE \${LIBS})\n";
-#  print $r "  foreach(libdir \${LIBRARY_DIRS})\n";
-#  print $r "    target_link_libraries(${tus} INTERFACE \"-L\${libdir}\")\n";
-#  print $r "  endforeach()\n";
-#  print $r "  target_compile_definitions(${tus} INTERFACE \${PROJECT_CPPDEFINES})\n";
-#  print $r "  target_compile_options(${tus} INTERFACE \${PROJECT_CXXFLAGS})\n";
-#  print $r "  foreach(use \${USES})\n";
-#  print $r "      target_link_libraries(${uc} INTERFACE \${use})\n";
-#  print $r "  endforeach()\n";
+  print $r "  add_library(${tus} INTERFACE)\n";
+  print $r "  target_include_directories(${tus} INTERFACE \${INCLUDE_DIRS})\n";
+  print $r "  target_link_libraries(${tus} INTERFACE \${LIBS})\n";
+  print $r "  foreach(libdir \${LIBRARY_DIRS})\n";
+  print $r "    target_link_libraries(${tus} INTERFACE \"-L\${libdir}\")\n";
+  print $r "  endforeach()\n";
+  print $r "  target_compile_definitions(${tus} INTERFACE \${PROJECT_CPPDEFINES})\n";
+  print $r "  target_compile_options(${tus} INTERFACE \${PROJECT_CXXFLAGS})\n";
+  print $r "  foreach(use \${USES})\n";
+  print $r "      target_link_libraries(${tus} INTERFACE \${use})\n";
+  print $r "  endforeach()\n";
   print $r "endif()\n";
   close($r);
 }
