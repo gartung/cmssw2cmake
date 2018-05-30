@@ -1,6 +1,6 @@
 macro(cms_rootdict name)
-  cms_find_package(rootrflx)
-  cms_find_package(rootcling)
+  cms_find_package(ROOTRFLX)
+  cms_find_package(ROOTCLING)
   if("${ARGN}" STREQUAL "")
     set(classes_h classes.h)
     set(classes_xml classes_def.xml)

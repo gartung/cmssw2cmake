@@ -6,7 +6,7 @@ my $base=$ENV{CMSSW_BASE} || ".";
 my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/RuntimeCache.db.gz";
 my $proj_cmake="${base}/cmssw-cmake";
-my $proj_modules="${proj_cmake}/modules";
+my $proj_modules="${proj_cmake}/cmssw";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
 

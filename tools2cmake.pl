@@ -7,19 +7,14 @@ my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/ToolCache.db.gz";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
-my $tools = shift || "${base}/cmssw-cmake/modules";
+my $tools = shift || "${base}/cmssw-cmake/tools";
 system("mkdir -p $tools");
 my %data=();
 foreach my $tool (keys %{$cc->{SETUP}})
 {
-  my $tus = $tool;
-  $tus=~s/-/_/g;
-  my $uc=uc($tool);
-  $uc=~s/-/_/g;
-  
+  my $uc=uc($tool); $uc=~s/-/_/g;
   my $r;
-  open($r,">${tools}/Find${tus}.cmake");
-  print $r "if(NOT ${uc}_FOUND)\n";
+  open($r,">${tools}/Find${uc}.cmake");
   print $r "  mark_as_advanced(${uc}_FOUND)\n";
   print $r "  set(${uc}_FOUND TRUE)\n";
   if (exists $cc->{SETUP}{$tool}{USE})
@@ -28,10 +23,9 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if (exists $cc->{SETUP}{$d})
       {
-         #$d=uc($d);
+         $d=uc($d);
          $d=~s/-/_/g;
          print $r "  cms_find_package($d)\n";
-         #print $r "  list(APPEND USES $d)\n";
       }
     }
   }
@@ -111,18 +105,6 @@ foreach my $tool (keys %{$cc->{SETUP}})
       }
     }
   }
-#  print $r "  add_library(${tus} INTERFACE)\n";
-#  print $r "  target_include_directories(${tus} INTERFACE \${INCLUDE_DIRS})\n";
-#  print $r "  target_link_libraries(${tus} INTERFACE \${LIBS})\n";
-#  print $r "  foreach(libdir \${LIBRARY_DIRS})\n";
-#  print $r "    target_link_libraries(${tus} INTERFACE \"-L\${libdir}\")\n";
-#  print $r "  endforeach()\n";
-#  print $r "  target_compile_definitions(${tus} INTERFACE \${PROJECT_CPPDEFINES})\n";
-#  print $r "  target_compile_options(${tus} INTERFACE \${PROJECT_CXXFLAGS})\n";
-#  print $r "  foreach(use \${USES})\n";
-#  print $r "      target_link_libraries(${uc} INTERFACE \${use})\n";
-#  print $r "  endforeach()\n";
-  print $r "endif()\n";
   close($r);
 }
 

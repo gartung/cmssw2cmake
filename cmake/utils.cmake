@@ -1,5 +1,5 @@
 function(get_compiler_flags var compiler target)
-  cms_find_package(${compiler}_cxxcompiler)
+  cms_find_package(${compiler}_CXXCOMPILER)
   get_cppflags(${var} ${target})
   #string(REPLACE " " ";" v ${CMAKE_CXX_FLAGS})
   set(${var} ${${var}} ${PROJECT_CXXFLAGS} PARENT_SCOPE)
