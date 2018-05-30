@@ -291,9 +291,13 @@ sub dump_cmake_module()
   my @vars = ("_INCLUDE_DIRS", "_LIBRARY_DIRS", "_LIBS", "_CPPDEFINES", "_CXXFLAGS", "_CFLAGS", "_FFLAGS");
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "  set(${mkfile}_FOUND TRUE)\n";
-  print $r "  mark_as_advanced(${mkfile}_FOUND)\n";
-  print $r "  list(APPEND ${name}_LIBS ${mkfile})\n";
-  print $r "  list(APPEND ${name}_LIBS -L\$ENV{LD_LIBRARY_PATH})\n";
+  print $r "  mark_as_advanced(${mkfile}_FOUND ";
+  foreach my $v (@vars)
+    {
+    print $r "${mkfile}${v} "
+    }
+  print $r ")\n";
+  print $r "  list(APPEND ${name}_LIBS ${name})\n";
   foreach my $d (@$deps)
   {
       $d =~ s/\///;
