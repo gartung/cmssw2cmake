@@ -289,6 +289,7 @@ sub dump_cmake_module()
 
   my $r;
   open($r,">${proj_modules}/Find${mkfile}.cmake");
+  print $r "if(NOT ${mkfile}_FOUND)\n";
   print $r "  set(${mkfile}_FOUND TRUE)\n";
   print $r "  mark_as_advanced(${mkfile}_FOUND)\n";
   foreach my $d (@$deps)
@@ -308,7 +309,8 @@ sub dump_cmake_module()
     print $r "    cms_find_package(${d})\n";
     print $r "  endif()\n";
   }
-  print $r "  list(APPEND LIBS ${name})\n";
+  print $r "list(APPEND LIBS $name)\n";
+  print $r "endif()\n";
   close($r);
 }
 
