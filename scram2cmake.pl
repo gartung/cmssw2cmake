@@ -288,51 +288,27 @@ sub dump_cmake_module()
   {$mkfile=~s/^lcg_//;}
 
   my $r;
-  my @vars = ("_INCLUDE_DIRS", "_LIBRARY_DIRS", "_LIBS", "_CPPDEFINES", "_CXXFLAGS", "_CFLAGS", "_FFLAGS");
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "  set(${mkfile}_FOUND TRUE)\n";
-  print $r "  mark_as_advanced(${mkfile}_FOUND ";
-  foreach my $v (@vars)
-    {
-    print $r "${mkfile}${v} "
-    }
-  print $r ")\n";
-  print $r "  list(APPEND ${name}_LIBS ${name})\n";
+  print $r "  mark_as_advanced(${mkfile}_FOUND)\n";
   foreach my $d (@$deps)
   {
       $d =~ s/\///;
       $d =~ s/^\s+|\s+$//g;
       $d=~s/^LCG//;
       $d=~s/-/_/g;
-  print $r "  if(NOT ${d}_FOUND)\n"; 
-  print $r "    cms_find_package(${d})\n";
-  print $r "  endif()\n";
-  foreach my $v (@vars)
-    {
-           print $r "  if(${d}${v})\n";
-           print $r "    list(APPEND ${name}${v} \${${d}${v}})\n";
-           print $r "  endif()\n";
-    }
+      print $r "  if(NOT ${d}_FOUND)\n"; 
+      print $r "    cms_find_package(${d})\n";
+      print $r "  endif()\n";
   }
   if($proj eq "coral")
   {
-  my $d = "coral";
-  print $r "  if(NOT ${d}_FOUND)\n"; 
-  print $r "    cms_find_package(${d})\n";
-  print $r "  endif()\n";
-  foreach my $v (@vars)
-    {
-           print $r "  if(${d}${v})\n";
-           print $r "    list(APPEND ${name}${v} \${${d}${v}})\n";
-           print $r "  endif()\n";
-    }
-  }
-  foreach my $v (@vars)
-    {
-    print $r "  if(${name}${v})\n";
-    print $r "  list(REMOVE_DUPLICATES ${name}${v})\n";
+    my $d = "coral";
+    print $r "  if(NOT ${d}_FOUND)\n"; 
+    print $r "    cms_find_package(${d})\n";
     print $r "  endif()\n";
-    }
+  }
+  print $r "  list(APPEND LIBS ${name})\n";
   close($r);
 }
 

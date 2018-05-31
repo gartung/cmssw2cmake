@@ -19,14 +19,21 @@ foreach my $tool (keys %{$cc->{SETUP}})
   
   my $r;
   open($r,">${tools}/Find${tus}.cmake");
-  my @vars = ("_INCLUDE_DIRS", "_LIBRARY_DIRS", "_LIBS", "_CPPDEFINES", "_CXXFLAGS", "_CFLAGS", "_FFLAGS");
-  print $r "  mark_as_advanced(${tus}_FOUND ${uc}_ROOT ";
-  foreach my $v (@vars)
-  { 
-    print $r "${tool}${v} ";
-  } 
-  print $r ")\n";
+  print $r "  mark_as_advanced(${tus}_FOUND ${uc}_ROOT)\n";
   print $r "  set(${tus}_FOUND TRUE)\n";
+  if (exists $cc->{SETUP}{$tool}{USE})
+  {
+    foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
+    {
+      if (exists $cc->{SETUP}{$d})
+      {
+         $d=~s/-/_/g;
+         print $r "  if(NOT ${d}_FOUND)\n";
+         print $r "    cms_find_package(${d})\n";
+         print $r "  endif()\n";
+      }
+    }
+  }
   my $base="";
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
@@ -40,7 +47,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  list(APPEND ${tus}_INCLUDE_DIRS \"$d\")\n";
+        print $r "  list(APPEND INCLUDE_DIRS \"$d\")\n";
       }
     }
   }
@@ -51,7 +58,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  list(APPEND ${tus}_LIBRARY_DIRS \"$d\")\n";
+        print $r "  list(APPEND LIBRARY_DIRS \"$d\")\n";
       }
     }
   }
@@ -61,7 +68,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if ($lib ne "")
       {
-        print $r "  list(APPEND ${tus}_LIBS ${lib})\n";
+        print $r "  list(APPEND LIBS ${lib})\n";
       }
     }
   }
@@ -72,24 +79,24 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if($f eq "CPPDEFINES")
       {
         foreach my $def (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND ${tus}_PROJECT_${f} -D${def})\n";}
+        {print $r "  list(APPEND PROJECT_${f} -D${def})\n";}
       }
       elsif(($f eq "CPPFLAGS") || ($f eq "CXXFLAGS"))
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND ${tus}_PROJECT_${f} ${opt})\n";}
+        {print $r "  list(APPEND PROJECT_${f} ${opt})\n";}
       }
       elsif($f eq "CFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND ${tus}_PROJECT_${f} \"${opt}\")\n";}
-        print $r "  list(APPEND ${tus}_CMAKE_C_FLAGS \"${tus}_\${PROJECT_${f}}\")\n";
+        {print $r "  list(APPEND PROJECT_${f} \"${opt}\")\n";}
+        print $r "  list(APPEND CMAKE_C_FLAGS \"\${PROJECT_${f}}\")\n";
       }
       elsif($f eq "FFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND ${tus}_PROJECT_${f} \"${opt}\")\n";}
-        print $r "  list(APPEND ${tus}_CMAKE_F_FLAGS \"${tus}_\${PROJECT_${f}}\")\n";
+        {print $r "  list(APPEND PROJECT_${f} \"${opt}\")\n";}
+        print $r "  list(APPEND CMAKE_F_FLAGS \"${tus}_\${PROJECT_${f}}\")\n";
       }
       else
       {
@@ -97,35 +104,10 @@ foreach my $tool (keys %{$cc->{SETUP}})
         {
           if ($f eq "REM_CXXFLAGS")
           {
-            print $r "  list(REMOVE_ITEM ${tus}_PROJECT_CXXFLAGS  \"$v\")\n";
+            print $r "  list(REMOVE_ITEM PROJECT_CXXFLAGS  \"$v\")\n";
           }
         }
       }
-    }
-  }
-  if (exists $cc->{SETUP}{$tool}{USE})
-  {
-    foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
-    {
-      if (exists $cc->{SETUP}{$d})
-      {
-         $d=~s/-/_/g;
-         print $r "  if(NOT ${d}_FOUND)\n";
-         print $r "    cms_find_package(${d})\n";
-         print $r "  endif()\n";
-         foreach my $v (@vars)
-         {
-           print $r "  if(${d}${v})\n";
-           print $r "    list(APPEND ${tus}${v} \${${d}${v}})\n";
-           print $r "  endif()\n";
-         }
-     }
-    }
-    foreach my $v (@vars)
-    {
-      print $r "  if(${tus}${v})\n";
-      print $r "  list(REMOVE_DUPLICATES ${tus}${v})\n";
-      print $r "  endif()\n";
     }
   }
   close($r);
