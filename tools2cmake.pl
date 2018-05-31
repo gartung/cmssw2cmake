@@ -7,7 +7,7 @@ my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/ToolCache.db.gz";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
-my $tools = shift || "${base}/cmssw-cmake/modules";
+my $tools = shift || "${base}/cmssw-cmake/tools";
 system("mkdir -p $tools");
 my %data=();
 foreach my $tool (keys %{$cc->{SETUP}})
@@ -18,10 +18,10 @@ foreach my $tool (keys %{$cc->{SETUP}})
   $uc=~s/-/_/g;
   
   my $r;
-  open($r,">${tools}/Find${tus}.cmake");
-  print $r "if(NOT ${uc}_FOUND)\n";
-  print $r "  mark_as_advanced(${uc}_FOUND)\n";
-  print $r "  set(${uc}_FOUND TRUE)\n";
+  open($r,">${tools}/Find${tus}.cmake"); 
+  print $r "if(NOT ${tus}_FOUND)\n";
+  print $r "  mark_as_advanced(${tus}_FOUND ${uc}_ROOT)\n";
+  print $r "  set(${tus}_FOUND TRUE)\n";
   if (exists $cc->{SETUP}{$tool}{USE})
   {
     foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
