@@ -11,12 +11,11 @@ my $base=$ENV{CMSSW_BASE} || ".";
 my $arch=$ENV{SCRAM_ARCH};
 my $proj=shift || "";
 my $proj_cmake="${base}/cmssw-cmake";
-my $proj_modules=shift || "${proj_cmake}/modules";
-my $tools="${proj_cmake}/modules";
+my $proj_modules=shift || "${proj_cmake}/cmssw";
+my $tools="${proj_cmake}/tools";
 my $prods="${base}/.SCRAM/${arch}/ProjectCache.db.gz";
 chdir($base);
-#system("rm -rf $proj_modules $tools");
-system("mkdir -p $proj_modules");
+system("rm -rf $proj_modules $tools; mkdir -p $proj_modules");
 if ($proj eq "")
 {
   print "Generating tools...\n";
@@ -28,7 +27,7 @@ if ( -e "${base}/config/toolbox/${arch}/tools/selected/coral.xml")
   my $coral=`scram tool tag coral CORAL_BASE`; chomp $coral;
   my $ver=$coral; $ver=~s/.*\///;
   print "Generating Coral $ver ....\n";
-  system("cd $coral ; pwd; eval `scram runtime -sh` >/dev/null 2>&1; ${THIS_SCRIPT} coral ${proj_cmake}/modules");
+  system("cd $coral ; pwd; eval `scram runtime -sh` >/dev/null 2>&1; ${THIS_SCRIPT} coral ${proj_cmake}/coral");
 }
 my $cc=&Cache::CacheUtilities::read($prods);
 my %data=();
@@ -299,11 +298,16 @@ sub dump_cmake_module()
       $d =~ s/^\s+|\s+$//g;
       $d=~s/^LCG//;
       $d=~s/-/_/g;
-      print $r "cms_find_package($d)\n";
+      print $r "  if(NOT ${d}_FOUND)\n"; 
+      print $r "    cms_find_package(${d})\n";
+      print $r "  endif()\n";
   }
   if($proj eq "coral")
   {
-    print $r "cms_find_package(coral)\n";
+    my $d = "coral";
+    print $r "  if(NOT ${d}_FOUND)\n"; 
+    print $r "    cms_find_package(${d})\n";
+    print $r "  endif()\n";
   }
   print $r "list(APPEND LIBS $name)\n";
   print $r "endif()\n";
