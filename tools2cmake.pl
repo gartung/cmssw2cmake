@@ -19,7 +19,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
   
   my $r;
   open($r,">${tools}/Find${tus}.cmake"); 
-  print $r "if(NOT ${tus}_FOUND)\n;"
+  print $r "if(NOT ${tus}_FOUND)\n";
   print $r "  mark_as_advanced(${tus}_FOUND ${uc}_ROOT)\n";
   print $r "  set(${tus}_FOUND TRUE)\n";
   if (exists $cc->{SETUP}{$tool}{USE})
