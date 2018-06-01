@@ -65,8 +65,8 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
       $data{rootdict}=[];
       push @{$data{rootdict}},["classes.h","classes_def.xml"];
     }
-    my $ss="*.cc *.cxx *.f *.f77";
-    if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{ADD_SUBDIR})){$ss="*.cc *.cxx *.f *.f77 */*.cc */*.cxx */*.f */*.f77"}
+    my $ss="*.cc *.cxx *.f *.f77 *.h*";
+    if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{ADD_SUBDIR})){$ss="*.cc *.cxx *.f *.f77 */*.cc */*.cxx */*.f */*.f77 */*.h*"}
     &dump_contents($class,"library",$cmdir, $name, $ss,$c);
   }
   elsif(($class eq "PACKAGE") && (exists $cc->{BUILDTREE}{$dir}{RAWDATA}{content}))
