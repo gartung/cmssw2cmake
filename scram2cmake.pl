@@ -15,7 +15,6 @@ my $proj_modules=shift || "${proj_cmake}/cmssw";
 my $tools="${proj_cmake}/tools";
 my $prods="${base}/.SCRAM/${arch}/ProjectCache.db.gz";
 chdir($base);
-system("cp ${SCRIPT_DIR}/cmake/CMakeLists.txt ${base}/src/CMakeLists.txt");
 system("rm -rf $proj_modules $tools; mkdir -p $proj_modules");
 if ($proj eq "")
 {
@@ -42,13 +41,10 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
   %data=();
   if ($class eq "LIBRARY")
   {
-    my $cmdir_b=$cmdir;
     if (-d "${cmdir}/src"){$cmdir="${cmdir}/src";}
     system("rm -f ${base}/$cmdir/*.cmake");
     my $name=$cc->{BUILDTREE}{$dir}{NAME};
     my $c=$cc->{BUILDTREE}{$dir}{RAWDATA}{content};
-    &dump_external_project($cmdir_b,$name,$c);
-    system("cat ${cmdir_b}/${name}.cmake >> ${base}/src/CMakeLists.txt");
     if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{LCG_DICT_HEADER}))
     {
       my $x=$c->{FLAGS};
@@ -72,11 +68,9 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     my $ss="*.cc *.cxx *.f *.f77";
     if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{ADD_SUBDIR})){$ss="*.cc *.cxx *.f *.f77 */*.cc */*.cxx */*.f */*.f77"}
     &dump_contents($class,"library",$cmdir, $name, $ss,$c);
-    system("rm -f ${base}/$cmdir/*.cmake");
   }
   elsif(($class eq "PACKAGE") && (exists $cc->{BUILDTREE}{$dir}{RAWDATA}{content}))
   {
-    my $cmdir_b=$cmdir;
     $name=$dir; $name=~s/\///;
     my @deps=();
     push @deps,&dump_deps($cc->{BUILDTREE}{$dir}{RAWDATA}{content});
@@ -101,15 +95,10 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
       &dump_cmake_module($name, $dir, $type, \@deps);
       if (-e "${base}/${cmdir}/interface/CMakeLists.txt") {system("rm -f ${base}/${cmdir}/interface/CMakeLists.txt");}
       system("cat ${base}/${cmdir}/interface/${name}.cmake > ${base}/${cmdir}/interface/CMakeLists.txt"); 
-      &dump_external_project($cmdir_b,$name,$c);
-      system("cat ${cmdir_b}/${name}.cmake >> ${base}/src/CMakeLists.txt");
     }
   }
   elsif(($class eq "PLUGINS") || ($class eq "TEST") || ($class eq "BINARY"))
   {
-    my $cmdir_b=dirname(${cmdir});
-    &dump_external_project($cmdir_b,$name,$c);
-    system("cat ${cmdir_b}/${name}.cmake >> ${base}/src/CMakeLists.txt");
     system("rm -f ${base}/$cmdir/*.cmake");
     my $c1=$cc->{BUILDTREE}{$dir}{RAWDATA}{content};
     my $c=$c1->{BUILDPRODUCTS};
@@ -135,7 +124,7 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
   }
 }
 if ($proj ne ""){exit(0);}
-
+system("cp ${SCRIPT_DIR}/cmake/CMakeLists.txt ${base}/src/CMakeLists.txt");
 if (! -e "${proj_cmake}/cmake"){system("cp -r ${SCRIPT_DIR}/cmake ${proj_cmake}/cmake");}
 
 my @xdirs=("bin","test","plugins","src");
@@ -146,8 +135,7 @@ foreach my $d (glob("${base}/src/*"))
   {
     if (! -f "${d}/CMakeLists.txt")
     {
-      system("cp ${SCRIPT_DIR}/cmake/top.cmake ${d}/CMakeLists.txt");
-      system("echo 'get_filename_component(CMS_SUBSYSTEM_NAME \${CMAKE_CURRENT_SOURCE_DIR} NAME)' >> ${d}/CMakeLists.txt");
+      system("echo 'get_filename_component(CMS_SUBSYSTEM_NAME \${CMAKE_CURRENT_SOURCE_DIR} NAME)' > ${d}/CMakeLists.txt");
       system("echo 'process_subdirs()' >> ${d}/CMakeLists.txt");
     }
     foreach my $s (glob("${d}/*"))
@@ -157,11 +145,6 @@ foreach my $d (glob("${base}/src/*"))
       foreach my $x (@xdirs){if (-e "$s/$x"){$xdir="$x $xdir";}}
       if ($xdir ne "")
       {
-        my $u=$s;
-        $u =~ s/${base}//;
-        $u =~ s/\///;
-        $u =~ s/^\s+|\s+$//g; 
-        system("cp ${SCRIPT_DIR}/cmake/top.cmake ${s}/CMakeLists.txt");
         system("echo 'get_filename_component(CMS_PACKAGE_NAME \${CMAKE_CURRENT_SOURCE_DIR} NAME)' >> ${s}/CMakeLists.txt");
         system("echo 'process_subdirs($xdir)' >> ${s}/CMakeLists.txt");
       }
@@ -187,7 +170,7 @@ sub dump_external_project()
     print $m "  TMP_DIR \"tmp/${dir}\"\n";
     print $m "  STAMP_DIR \"tmp/${dir}/stamp\"\n";
     print $m "  DOWNLOAD_DIR \"tmp/${dir}\"\n";
-    print $m "  SOURCE_DIR \"${base}/src/${dir}\"\n";
+    print $m "  SOURCE_DIR \"${base}/${dir}\"\n";
     print $m "  BINARY_DIR \"${dir}\"\n";
     print $m "  INSTALL_DIR \"${base}\"\n";
     print $m "  CMAKE_COMMAND \"cmake\"\n";
