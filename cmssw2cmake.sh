@@ -16,12 +16,12 @@ if [ ! -d $REL ] ; then
   scram setup self
   scram setup
   rm -rf src
-  git clone --reference /cvmfs/cms-ib.cern.ch/git/cms-sw/cmssw.git git@github.com:cms-sw/cmssw src
-  (cd src;  git checkout $REL)
-  sed -i -e 's|name="GeneratorInterfaceCascadeInterface"|name="GeneratorInterfaceCascadeInterfacePlugin"|' src/GeneratorInterface/CascadeInterface/plugins/BuildFile.xml
-  sed -i -e 's|name="ValidationRecoMET"|name="ValidationRecoMETPlugin"|' src/Validation/RecoMET/plugins/BuildFile.xml
-  mv src/BigProducts .
-  scram build disable-biglib
+  #git clone --reference /cvmfs/cms-ib.cern.ch/git/cms-sw/cmssw.git git@github.com:cms-sw/cmssw src
+  #(cd src;  git checkout $REL)
+  #sed -i -e 's|name="GeneratorInterfaceCascadeInterface"|name="GeneratorInterfaceCascadeInterfacePlugin"|' src/GeneratorInterface/CascadeInterface/plugins/BuildFile.xml
+  #sed -i -e 's|name="ValidationRecoMET"|name="ValidationRecoMETPlugin"|' src/Validation/RecoMET/plugins/BuildFile.xml
+  #mv src/BigProducts .
+  #scram build disable-biglib
   scram build -r echo_CXX
   eval `scram run -sh`
   $SCRIPT_DIR/scram2cmake.pl
