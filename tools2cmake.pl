@@ -26,7 +26,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
     $base=$cc->{SETUP}{$tool}{"${uc}_BASE"};
-    print $r "\tset(${uc}_ROOT $base)\n";
+    print $r "\tset(${uc}_ROOT \${CMAKE_INSTALL_PREFIX})\n";
   }
   if (exists $cc->{SETUP}{$tool}{USE})
   {
@@ -45,8 +45,10 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if (-e $d)
       {
-        if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "\tinclude_directories(${d})\n";
+        if($base){$d=~s!$base(.*)!\${CMAKE_INSTALL_PREFIX}${1}!;}
+        print $r "if(\${CMS_TARGET_NAME})\n";
+        print $r "\ttarget_include_directories(\${CMS_TARGET_NAME} PUBLIC ${d})\n";
+        print $r "endif()\n";
       }
     }
   }
@@ -57,7 +59,9 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "\tlink_directories(${d})\n";
+        print $r "if(\${CMS_TARGET_NAME})\n";
+        print $r "\ttarget_link_directories(\${CMS_TARGET_NAME} PUBLIC \${CMAKE_INSTALL_PREFIX}/lib)\n";
+        print $r "endif()\n";
       }
     }
   }
@@ -67,7 +71,9 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if ($lib ne "")
       {
-        print $r "\tlink_libraries(${lib})\n";
+        print $r "if(\${CMS_TARGET_NAME})\n";
+        print $r "\ttarget_link_libraries(\${CMS_TARGET_NAME} PUBLIC ${lib})\n";
+        print $r "endif()\n";
       }
     }
   }
@@ -77,26 +83,35 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if($f eq "CPPDEFINES")
       {
+        print $r "if(\${CMS_TARGET_NAME})\n";
         foreach my $def (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "\tadd_defintions ${def})\n";}
+        {print $r "\ttarget_compile_defintions(\${CMS_TARGET_NAME} PUBLIC ${def})\n";}
+        print $r "endif()\n";
       }
       elsif(($f eq "CPPFLAGS") || ($f eq "CXXFLAGS"))
       {
+        print $r "if(\${CMS_TARGET_NAME})\n";
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "\tadd_compile_options( ${opt})\n";}
+        {print $r "\ttarget_compile_options(\${CMS_TARGET_NAME} PUBLIC ${opt})\n";}
+        print $r "endif()\n";
       }
       elsif($f eq "CFLAGS")
       {
+        print $r "if(\${CMS_TARGET_NAME})\n";
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "\tadd_compile_options( ${opt})\n";}
+        {print $r "\ttarget_compile_options(\${CMS_TARGET_NAME} PUBLIC ${opt})\n";}
+        print $r "endif()\n";
       }
       elsif($f eq "FFLAGS")
       {
+        print $r "if(\${CMS_TARGET_NAME})\n";
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "\tadd_compile_options${opt})\n";}
+        {print $r "\ttarget_compile_options( \${CMS_TARGET_NAME} PUBLIC ${opt})\n";}
+        print $r "endif()\n";
       }
       else
       {
+        print $r "if(\${CMS_TARGET_NAME})\n";
         foreach my $v (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
         {
           if ($f eq "REM_CXXFLAGS")
@@ -107,16 +122,19 @@ foreach my $tool (keys %{$cc->{SETUP}})
             print $r "\tendif()\n"; 
           }
         }
+        print $r "endif()\n";
       }
     }
+    print $r "if(\${CMS_TARGET_NAME})\n";
     print $r "\tif(PROJECT_CXXFLAGS)\n";
-    print $r "\t\tadd_compile_options(\"\${PROJECT_CXXFLAGS}\")\n";
+    print $r "\t\ttarget_compile_options(\${CMS_TARGET_NAME} PUBLIC \${PROJECT_CXXFLAGS})\n";
     print $r "\t\tunset(PROJECT_CXXFLAGS)\n";
     print $r "\tendif()\n";
     print $r "\tif(PROJECT_CPPDEFINES)\n";
-    print $r "\t\tadd_definitions(\"\${PROJECT_CPPDEFINES}\")\n";
+    print $r "\t\ttarget_compile_definitions(\${CMS_TARGET_NAME} PUBLIC \${PROJECT_CPPDEFINES})\n";
     print $r "\t\tunset(PROJECT_CPPDEFINES)\n";
     print $r "\tendif()\n";
+    print $r "endif()\n";
   }
   print $r "endif()\n";
   close($r);
