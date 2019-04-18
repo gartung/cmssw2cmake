@@ -10,7 +10,7 @@ my $relbase=$ENV{CMSSW_RELEASE_BASE};
 my $base=$ENV{CMSSW_BASE} || ".";
 my $arch=$ENV{SCRAM_ARCH};
 my $proj=shift || "";
-my $proj_cmake="${base}/cmssw-cmake";
+my $proj_cmake="${base}/src/cmssw-cmake";
 my $proj_modules=shift || "${proj_cmake}/cmssw";
 my $tools="${proj_cmake}/tools";
 my $prods="${base}/.SCRAM/${arch}/ProjectCache.db.gz";
@@ -33,12 +33,13 @@ my $cc=&Cache::CacheUtilities::read($prods);
 my %data=();
 foreach my $dir (keys %{$cc->{BUILDTREE}})
 {
-  system("rm -f ${base}/src/$dir/CMakeLists.txt");
+  if (-e "${base}/${idir}/CMakeLists.txt") {system("rm -f ${base}/src/$dir/CMakeLists.txt");}
   if (! exists $cc->{BUILDTREE}{$dir}{METABF}) {next;}
   if (scalar(@{$cc->{BUILDTREE}{$dir}{METABF}})==0){next;}
   my $cmdir=dirname($cc->{BUILDTREE}{$dir}{METABF}[0]);
   my $class = $cc->{BUILDTREE}{$dir}{CLASS};
   %data=();
+  system("rm -f ${base}/$cmdir/CMakeLists.txt");
   if ($class eq "LIBRARY")
   {
     if (-d "${cmdir}/src"){$cmdir="${cmdir}/src";}
@@ -68,6 +69,8 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
     my $ss="*.cc *.cxx *.f *.f77";
     if ((exists $c->{FLAGS}) && (exists  $c->{FLAGS}{ADD_SUBDIR})){$ss="*.cc *.cxx *.f *.f77 */*.cc */*.cxx */*.f */*.f77"}
     &dump_contents($class,"library",$cmdir, $name, $ss,$c);
+    if (-e "${base}/${idir}/CMakeLists.txt") {system("rm -f ${base}/${idir}/CMakeLists.txt");}
+    system("echo \"include($name.cmake)\" \>\>${base}/$cmdir/CMakeLists.txt");
   }
   elsif(($class eq "PACKAGE") && (exists $cc->{BUILDTREE}{$dir}{RAWDATA}{content}))
   {
@@ -83,11 +86,12 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
       my $class="INTERFACE";
       my $ss="*.h";
       &dump_contents($class,"interface",$cmdir, $name, $ss,$c);
+      print($r, "include($name.cmake)\n");
       if (-e "${base}/${idir}")
       {
         &dump_cmake_module($name, $idir, "interface", \@deps);
         if (-e "${base}/${idir}/CMakeLists.txt") {system("rm -f ${base}/${idir}/CMakeLists.txt");}
-        system("cat ${base}/${idir}/${name}.cmake > ${base}/${idir}/CMakeLists.txt"); 
+        system("echo \"include(${name}.cmake)\" \>\> ${base}/${idir}/CMakeLists.txt"); 
       }
     }
   }
@@ -112,21 +116,24 @@ foreach my $dir (keys %{$cc->{BUILDTREE}})
         if(scalar(@{$c->{$t}{$l}{FILES}})>0){$files=join(" ",@{$c->{$t}{$l}{FILES}});}
         if ($files ne "")
         {
-          if ($t eq "LIBRARY" ) {&dump_contents($class,"library",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
-          if ($t eq "BIN"     ) {&dump_contents($class,"binary",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
-          if ($class eq "TEST") {&dump_contents($class,"testbin",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});}
+          if ($t eq "LIBRARY" ) {&dump_contents($class,"library",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});
+                                 system("echo \"include($l.cmake)\" \>\>${base}/$cmdir/CMakeLists.txt");}
+          if ($t eq "BIN"     ) {&dump_contents($class,"binary",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});
+                                 system("echo include\"($l.cmake)\" \>\>${base}/$cmdir/CMakeLists.txt");}
+          if ($class eq "TEST") {&dump_contents($class,"testbin",$cmdir, $l, $files,$c1, $c->{$t}{$l}{content});
+                                 system("echo include\"($l.cmake)\" \>\>${base}/$cmdir/CMakeLists.txt");}
         }
       }
     }
   }
-  system("rm -f ${base}/$cmdir/CMakeLists.txt");
-  my @cmks = glob("${base}/$cmdir/*.cmake");
-  foreach my $cm (@cmks){
-    system("cat $cm >> ${base}/$cmdir/CMakeLists.txt");
-  }
+  #system("rm -f ${base}/$cmdir/CMakeLists.txt");
+  #my @cmks = glob("${base}/$cmdir/*.cmake");
+  #foreach my $cm (@cmks){
+  #  system("cat $cm >> ${base}/$cmdir/CMakeLists.txt");
+  #}
 }
 if ($proj ne ""){exit(0);}
-system("cp ${SCRIPT_DIR}/cmake/CMakeLists.txt ${base}/src/CMakeLists.txt");
+system("cp ${SCRIPT_DIR}/cmake/CMakeLists.txt.tmp ${base}/src/CMakeLists.txt");
 if (! -e "${proj_cmake}/cmake"){system("cp -r ${SCRIPT_DIR}/cmake ${proj_cmake}/cmake");}
 
 my @xdirs=("bin","test","plugins","src");
@@ -213,12 +220,6 @@ sub dump_contents()
   if ($files eq "" and not ($dir eq "interface") ){print "######## $dir: No Files\n";return;}
   print "Processing target $name\n";
   my $r; 
-  if ($type eq "testbin")
-    {
-      open($r,">${dir}/zz_${name}.cmake");
-    }
-  else
-    {
     if($type eq "interface")
       {
       open($r,">${dir}/interface/${name}.cmake");
@@ -227,41 +228,33 @@ sub dump_contents()
       {
       open($r,">${dir}/${name}.cmake");
       }
-    }
 
-  print $r "set(CMS_TARGET_NAME ${name})\n\n";
   if (($type eq "library") || ($type eq "interface"))
   { 
-    if (exists $data{rootdict})
-    {
-      foreach my $x (@{$data{rootdict}})
-      {
-        print $r "cms_rootdict(\${CMS_TARGET_NAME} $x->[0] $x->[1])\n\n";
-      }
-    }
     my @deps=();
     my @flags=();
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
-    my $INTERFACE="";
     if ($type eq "interface")
     {
-      print $r "add_library(\${CMS_TARGET_NAME} INTERFACE)\n";
-      print $r "target_include_directories(\${CMS_TARGET_NAME} INTERFACE \${CMAKE_SOURCE_DIR})\n";
+      print $r "add_library(${name} INTERFACE)\n";
+      print $r "include_directories(${name}  \${CMAKE_SOURCE_DIR})\n";
+      print $r "include_directories(${name}  \${CMAKE_INSTALL_PREFIX}/include)\n";
     }
     else
     { 
       print $r "file(GLOB PRODUCT_SOURCES $files)\n";
       print $r "if(PRODUCT_SOURCES)\n";
-      print $r "\tadd_library(\${CMS_TARGET_NAME} SHARED \${PRODUCT_SOURCES})\n";
-      print $r "\ttarget_include_directories(\${CMS_TARGET_NAME} PRIVATE \${CMAKE_SOURCE_DIR})\n";
-      print $r "\ttarget_include_directories(\${CMS_TARGET_NAME} PUBLIC \${CMAKE_INSTALL_PREFIX}/include)\n";
+      print $r "\tadd_library(${name} SHARED \${PRODUCT_SOURCES})\n";
+      print $r "\tinstall(TARGETS ${name}  DESTINATION lib)\n";
+      print $r "\tinclude_directories(${name}  \${CMAKE_SOURCE_DIR})\n";
+      print $r "\tinclude_directories(${name} \${CMAKE_INSTALL_PREFIX}/include)\n";
       print $r "endif()\n\n";
     }
     if ($class eq "PLUGIN") 
     {
-      print $r "SET_TARGET_PROPERTIES(\${CMS_TARGET_NAME} PROPERTIES PREFIX \"plugin\")\n";
-      print $r "edmplugingen(\${CMS_TARGET_NAME})\n\n";
+      print $r "SET_TARGET_PROPERTIES(${name} PROPERTIES PREFIX \"plugin\")\n";
+      print $r "edmplugingen(${name})\n\n";
     }
     if (scalar(@deps))
     {
@@ -271,21 +264,29 @@ sub dump_contents()
         $u =~ s/\///;
         $u =~ s/^\s+|\s+$//g;
         print $r "cms_find_package(${u})\n";
+        #if ($d =~ /\//) { print $r "add_dependencies(${name} ${u})\n";}
       }
       print $r "\n";
     }
     print $r "if(_LIBS)\n";
-    print $r "\ttarget_link_libraries(\${CMS_TARGET_NAME} PUBLIC \${_LIBS})\n";
+    print $r "\tlink_libraries(${name} \${LIB_TYPE} \${_LIBS})\n";
     print $r "\tunset(_LIBS)\n";
     print $r "endif()\n\n";
-    print $r "cms_find_package(\${CMAKE_COMPILER}-cxxcompiler)\n";
-    print $r "cms_find_package(\${CMAKE_COMPILER}-ccompiler)\n";
-    print $r "cms_find_package(\${CMAKE_COMPILER}-f77compiler)\n\n";
+    print $r "cms_find_package(gcc-cxxcompiler)\n";
+    print $r "cms_find_package(gcc-ccompiler)\n";
+    print $r "cms_find_package(gcc-f77compiler)\n\n";
     if (scalar(@flags)>0)
     {
-     print $r "target_compile_options(\${CMS_TARGET_NAME} ",join(" ",@flags),")\n\n";
+     print $r "compile_options(${name} ",join(" ",@flags),")\n\n";
     }
-    print $r "install(TARGETS \${CMS_TARGET_NAME}  DESTINATION lib)\n";
+    if (exists $data{rootdict})
+    {
+      foreach my $x (@{$data{rootdict}})
+      {
+        print $r "add_rootdict_rules(${name})\n";
+        print $r "cms_rootdict(${name} $x->[0] $x->[1])\n\n";
+      }
+    }
     if(($class ne "TEST") || ($class ne "BIN")) {&dump_cmake_module($name, $dir, $type, \@deps)};
   }
   if ($type eq "binary")
@@ -295,9 +296,9 @@ sub dump_contents()
     if (defined $cont1){push @deps,&dump_deps($cont1); push @flags,&dump_comp_flags($cont1);}
     if (defined $cont2){push @deps,&dump_deps($cont2); push @flags,&dump_comp_flags($cont2);}
     print $r "file(GLOB PRODUCT_SOURCES $files)\n";
-    print $r "add_executable(\${CMS_TARGET_NAME} \${PRODUCT_SOURCES})\n";
-    print $r "target_include_directories(\${CMS_TARGET_NAME} PRIVATE \${CMAKE_SOURCE_DIR})\n";
-    print $r "target_include_directories(\${CMS_TARGET_NAME} PUBLIC \${CMAKE_INSTALL_PREFIX}/include)\n";
+    print $r "add_executable(${name} \${PRODUCT_SOURCES})\n";
+    print $r "include_directories(${name}  \${CMAKE_SOURCE_DIR})\n";
+    print $r "include_directories(${name} \${CMAKE_INSTALL_PREFIX}/include)\n";
     if (scalar(@deps))
     {
       foreach my $d (@deps)
@@ -311,9 +312,9 @@ sub dump_contents()
     }
     if (scalar(@flags)>0)
     {
-     print $r "target_compile_options(\${CMS_TARGET_NAME} PUBLIC ",join(" ",@flags),")\n";
+     print $r "compile_options(${name} ",join(" ",@flags),")\n";
     }
-    print $r "install(TARGETS \${CMS_TARGET_NAME}  DESTINATION bin)\n";
+    print $r "install(TARGETS ${name}  DESTINATION bin)\n";
   }
   if ($type eq "testbin")
   {
@@ -333,8 +334,8 @@ sub dump_contents()
             }
     
     }
-    print $r "cms_add_test(\${CMS_TARGET_NAME}_CTest "; 
-    print $r "COMMAND \${CMS_TARGET_NAME} \n";
+    print $r "cms_add_test(${name}_CTest "; 
+    print $r "COMMAND ${name} \n";
     if (scalar(@trargs)>0)
     {
         print $r "\t\t\tTRARGS\n";
@@ -348,7 +349,7 @@ sub dump_contents()
     {
         foreach my $p (@pretest)
         {
-        if ($p) {print $r "set_tests_properties( \${CMS_TARGET_NAME}_CTest PROPERTIES DEPENDS $p->[0]_CTest)\n";}
+        if ($p) {print $r "set_tests_properties( ${name}_CTest PROPERTIES DEPENDS $p->[0]_CTest)\n";}
         }
     }
   }
@@ -369,16 +370,15 @@ sub dump_cmake_module()
   open($r,">${proj_modules}/Find${mkfile}.cmake");
   print $r "if(NOT ${mkfile}_FOUND)\n";
   print $r "\tset(${mkfile}_FOUND TRUE)\n";
-  print $r "\tmark_as_advanced(${mkfile}_FOUND)\n";
   if($proj eq "coral")
   {
     my $d = "coral";
-    print $r "\ttarget_link_libraries(\${CMS_TARGET_NAME} PUBLIC ${name})\n";
+    print $r "\tlink_libraries(${name})\n";
     print $r "\tcms_find_package(${d})\n";
   }
   else 
   {
-    print $r "\ttarget_link_libraries(\${CMS_TARGET_NAME} PUBLIC ${name})\n";
+    print $r "\tlink_libraries(${name})\n";
   }
   foreach my $d (@$deps)
   {
@@ -426,7 +426,7 @@ sub dump_comp_flags()
       if(exists $c->{FLAGS}{$f})
       {
         my $ch="";
-        #if ($f eq "CPPDEFINES"){$ch="-D";}
+        if ($f eq "CPPDEFINES"){$ch="-D";}
         foreach my $v (@{$c->{FLAGS}{$f}}){push @flags,"${ch}${v}";}
       }
     }

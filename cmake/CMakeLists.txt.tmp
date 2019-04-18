@@ -1,0 +1,14 @@
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+
+project(cmssw VERSION 10.5.0 LANGUAGES C CXX Fortran)
+
+include (${CMAKE_SOURCE_DIR}/cmssw-cmake/cmake/all.cmake)
+
+
+set(dirnames src bin test plugins interface)
+file(GLOB subdirs "[A-Z]*/*")
+  foreach(dir ${subdirs})
+    if(IS_DIRECTORY ${dir} AND EXISTS ${dir}/CMakeLists.txt)
+      add_subdirectory( ${dir} )
+    endif()
+  endforeach()

@@ -30,7 +30,6 @@ macro(add_rootdict_rules name)
     list(GET ROOTDICT_${dict} 2 classes_cc)
     get_filename_component(classname ${classes_h} NAME_WE)
     set_source_files_properties(${classes_cc} PROPERTIES COMPILE_FLAGS "-Os -Wno-unused-variable")
-    get_cppflags(FLAGS ${name})
     add_custom_command(OUTPUT ${classes_cc}
                     COMMAND ${ROOTRFLX_ROOT}/bin/genreflex ${CMAKE_CURRENT_SOURCE_DIR}/${classes_h}
                     -s ${CMAKE_CURRENT_SOURCE_DIR}/${classes_xml}
