@@ -37,7 +37,6 @@ foreach my $tool (keys %{$cc->{SETUP}})
   if (exists $cc->{SETUP}{$tool}{"${uc}_BASE"})
   {
     $base=$cc->{SETUP}{$tool}{"${uc}_BASE"};
-    print $r "  set(${uc}_ROOT $base)\n";
   }
   if ($cc->{SETUP}{$tool}{INCLUDE})
   {
@@ -45,7 +44,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if (-e $d)
       {
-        if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
+        if($base){$d=~s!$base(.*)!\${CMAKE_INSTALL_PREFIX}${1}!;}
         print $r "  list(APPEND INCLUDE_DIRS $d)\n";
       }
     }
@@ -56,8 +55,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if (-e $d)
       {
-        if($base){$d=~s/$base\//\${${uc}_ROOT}\//;}
-        print $r "  list(APPEND LIBRARY_DIRS $d)\n";
+        print $r "  list(APPEND LIBRARY_DIRS \${CMAKE_INSTALL_PREFIX}/lib)\n";
       }
     }
   }
@@ -78,24 +76,24 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if($f eq "CPPDEFINES")
       {
         foreach my $def (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \${PROJECT_${f}} -D${def})\n";}
+        {print $r "  list(APPEND PROJECT_${f} -D${def})\n";}
       }
       elsif(($f eq "CPPFLAGS") || ($f eq "CXXFLAGS"))
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \${PROJECT_${f}} ${opt})\n";}
+        {print $r "  list(APPEND PROJECT_${f}  ${opt})\n";}
       }
       elsif($f eq "CFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \"\${PROJECT_${f}} ${opt}\")\n";}
-        print $r "  set(CMAKE_C_FLAGS \"\${CMAKE_C_FLAGS} \${PROJECT_${f}}\")\n";
+        {print $r "  list( APPEND PROJECT_${f} ${opt})\n";}
+        print $r "  list(APPEND CMAKE_C_FLAGS  \${PROJECT_${f}})\n";
       }
       elsif($f eq "FFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  set(PROJECT_${f} \"\${PROJECT_${f}} ${opt}\")\n";}
-        print $r "  set(CMAKE_F_FLAGS \"\${CMAKE_F_FLAGS} \${PROJECT_${f}}\")\n";
+        {print $r "  list(APPEND PROJECT_${f} ${opt})\n";}
+        print $r "  list(APPEND CMAKE_F_FLAGS  \${PROJECT_${f}})\n";
       }
       else
       {
@@ -103,7 +101,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
         {
           if ($f eq "REM_CXXFLAGS")
           {
-            print $r "  string(REPLACE \"$v\" \"\" PROJECT_CXXFLAGS \"\${PROJECT_CXXFLAGS}\")\n";
+            print $r "  list(REMOVE_ITEM  PROJECT_CXXFLAGS $v )\n";
           }
         }
       }
