@@ -32,7 +32,7 @@ macro(add_rootdict_rules name)
     set_source_files_properties(${classes_cc} PROPERTIES COMPILE_FLAGS "-Os -Wno-unused-variable")
     get_cppflags(FLAGS ${name})
     add_custom_command(OUTPUT ${classes_cc}
-                    COMMAND ${ROOTRFLX_ROOT}/bin/genreflex ${CMAKE_CURRENT_SOURCE_DIR}/${classes_h}
+                    COMMAND ${CMAKE_INSTALL_PREFIX}/bin/genreflex ${CMAKE_CURRENT_SOURCE_DIR}/${classes_h}
                     -s ${CMAKE_CURRENT_SOURCE_DIR}/${classes_xml}
                     -o ${classes_cc}
                     --deep

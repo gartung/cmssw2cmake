@@ -7,7 +7,7 @@ my $arch=$ENV{SCRAM_ARCH};
 my $prods="${base}/.SCRAM/${arch}/ToolCache.db.gz";
 chdir($base);
 my $cc=&Cache::CacheUtilities::read($prods);
-my $tools = shift || "${base}/cmssw-cmake/modules";
+my $tools = shift || "${base}/src/cmssw-cmake/modules";
 system("mkdir -p $tools");
 my %data=();
 foreach my $tool (keys %{$cc->{SETUP}})
@@ -20,8 +20,8 @@ foreach my $tool (keys %{$cc->{SETUP}})
   my $r;
   open($r,">${tools}/Find${tus}.cmake");
   print $r "if(NOT ${uc}_FOUND)\n";
-  print $r "  mark_as_advanced(${uc}_FOUND)\n";
-  print $r "  set(${uc}_FOUND TRUE)\n";
+  print $r "\tmark_as_advanced(${uc}_FOUND)\n";
+  print $r "\tset(${uc}_FOUND TRUE)\n";
   if (exists $cc->{SETUP}{$tool}{USE})
   {
     foreach my $d (@{$cc->{SETUP}{$tool}{USE}})
@@ -29,7 +29,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (exists $cc->{SETUP}{$d})
       {
          $d=~s/-/_/g;
-         print $r "  cms_find_package($d)\n";
+         print $r "\tcms_find_package($d)\n";
       }
     }
   }
@@ -45,7 +45,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if (-e $d)
       {
         if($base){$d=~s!$base(.*)!\${CMAKE_INSTALL_PREFIX}${1}!;}
-        print $r "  list(APPEND INCLUDE_DIRS $d)\n";
+        print $r "\tlist(APPEND INCLUDE_DIRS $d)\n";
       }
     }
   }
@@ -55,7 +55,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if (-e $d)
       {
-        print $r "  list(APPEND LIBRARY_DIRS \${CMAKE_INSTALL_PREFIX}/lib)\n";
+        print $r "\tlist(APPEND LIBRARY_DIRS \${CMAKE_INSTALL_PREFIX}/lib)\n";
       }
     }
   }
@@ -65,7 +65,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
     {
       if ($lib ne "")
       {
-        print $r "  list(APPEND LIBS ${lib})\n";
+        print $r "\tlist(APPEND LIBS ${lib})\n";
       }
     }
   }
@@ -76,24 +76,26 @@ foreach my $tool (keys %{$cc->{SETUP}})
       if($f eq "CPPDEFINES")
       {
         foreach my $def (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND PROJECT_${f} -D${def})\n";}
+        {print $r "\tlist(APPEND PROJECT_${f} ${def})\n";}
       }
       elsif(($f eq "CPPFLAGS") || ($f eq "CXXFLAGS"))
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND PROJECT_${f}  ${opt})\n";}
+        {print $r "\tlist(APPEND  PROJECT_${f}  ${opt})\n";}
       }
       elsif($f eq "CFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list( APPEND PROJECT_${f} ${opt})\n";}
-        print $r "  list(APPEND CMAKE_C_FLAGS  \${PROJECT_${f}})\n";
+        {print $r "\tlist(APPEND PROJECT_${f} ${opt})\n";}
+         print $r "\tstring(JOIN \" \" TMP_${f} \${PROJECT_${f}})\n";
+         print $r "\tstring(JOIN \" \"  CMAKE_C_FLAGS \${CMAKE_C_FLAGS} \${TMP_${f}})\n";
       }
       elsif($f eq "FFLAGS")
       {
         foreach my $opt (@{$cc->{SETUP}{$tool}{FLAGS}{$f}})
-        {print $r "  list(APPEND PROJECT_${f} ${opt})\n";}
-        print $r "  list(APPEND CMAKE_F_FLAGS  \${PROJECT_${f}})\n";
+        {print $r "\tlist(APPEND PROJECT_${f} ${opt})\n";}
+         print $r "\tstring(JOIN \" \" TMP_${f} \${PROJECT_${f}})\n";
+         print $r "\tstring(JOIN \" \" CMAKE_F_FLAGS \${CMAKE_F_FLAGS} \${TMP_${f}})\n";
       }
       else
       {
@@ -101,7 +103,7 @@ foreach my $tool (keys %{$cc->{SETUP}})
         {
           if ($f eq "REM_CXXFLAGS")
           {
-            print $r "  list(REMOVE_ITEM  PROJECT_CXXFLAGS $v )\n";
+            print $r "\tlist( REMOVE_ITEM  $v PROJECT_CXXFLAGS )\n";
           }
         }
       }
